@@ -8,6 +8,7 @@
 
 import Mathlib.Data.Real.Basic
 import Mathlib.Data.Real.Sqrt
+import Mathlib.Data.Set.Basic
 import Mathlib.Tactic
 
 namespace WadeAnalysis
@@ -739,6 +740,397 @@ theorem Theorem_1_7_1 (a : ℝ) : |a| ≥ 0 ∧ |a| = 0 ↔ a = 0 := by
          _ = 0 := abs_zero  -- |0| = 0
    have h2 : |a| ≥ 0 := abs_nonneg a  -- |a| ≥ 0（絕對值非負）
    exact ⟨h2, h1⟩  -- 組合得到 |a| ≥ 0 ∧ |a| = 0
+
+-- 定理 1.7(2)：對於任意實數 a, b，有 |a - b| = |b - a|
+-- 這個定理說明：絕對值對減法具有交換性，即 |a - b| = |b - a|
+theorem Theorem_1_7_2 (a b : ℝ) : |a - b| = |b - a| := by
+   have h1 : a - b = -(b - a) := by rw [neg_sub]  -- a - b = -(b - a)
+   calc
+      |a - b|
+      _ = |-(b - a)| := by rw [h1]  -- 將 a - b 替換為 -(b - a)
+      _ = |b - a| := by rw [abs_neg]  -- |-(b - a)| = |b - a|
+
+-- 定理 1.7(3)：對於任意實數 a, b，有 |a + b| ≤ |a| + |b| 且 ||a| - |b|| ≤ |a - b|
+-- 這個定理包含兩個部分：三角不等式和反向三角不等式
+theorem Theorem_1_7_3 (a b : ℝ) : |a + b| ≤ |a| + |b| ∧ |(|a| - |b|)| ≤ |a - b| := by
+   constructor  -- 分別處理兩個不等式
+   have h_ab : a + b ≤ 0 ∨ 0 ≤ a + b := le_total (a + b) 0  -- 對 a + b 分情況
+   cases h_ab with  -- 分情況討論
+   | inl hab_neg =>  -- 情況 1：a + b ≤ 0
+      calc
+         |a + b|
+         _ = - (a + b) := by rw [abs_of_nonpos hab_neg]  -- 因為 a + b ≤ 0，所以 |a + b| = -(a + b)
+         _ = -a + (-b) := by rw [neg_add]  -- -(a + b) = -a + (-b)
+         _ = -a - b := by rw [← sub_eq_add_neg]  -- -a + (-b) = -a - b
+         _ ≤ |a| + |b| := by  -- 需要證明 -a - b ≤ |a| + |b|
+            have h1 : -a ≤ |a| := by  -- 證明 -a ≤ |a|
+               have h1a : a ≤ 0 ∨ 0 ≤ a := le_total a 0  -- 對 a 分情況
+               cases h1a with
+               | inl ha_neg =>  -- 情況 1.1：a ≤ 0
+                  have h1a1 : |a| = -a := by rw [abs_of_nonpos ha_neg]  -- 因為 a ≤ 0，所以 |a| = -a
+                  calc
+                     -a
+                     _ = |a| := h1a1.symm  -- -a = |a|
+                     _ ≤ |a| := le_refl |a|  -- |a| ≤ |a|
+               | inr ha_pos =>  -- 情況 1.2：a ≥ 0
+                  have h1a1 : |a| = a := by rw [abs_of_nonneg ha_pos]  -- 因為 a ≥ 0，所以 |a| = a
+                  calc
+                     -a
+                     _ ≤ 0 := neg_nonpos.mpr ha_pos  -- 因為 a ≥ 0，所以 -a ≤ 0
+                     _ ≤ a := ha_pos  -- 因為 a ≥ 0，所以 0 ≤ a
+                     _ = |a| := h1a1.symm  -- a = |a|
+            have h2 : -b ≤ |b| := by  -- 類似地證明 -b ≤ |b|
+               have h2a : b ≤ 0 ∨ 0 ≤ b := le_total b 0  -- 對 b 分情況
+               cases h2a with
+               | inl hb_neg =>  -- 情況 2.1：b ≤ 0
+                  have h2a1 : |b| = -b := by rw [abs_of_nonpos hb_neg]  -- 因為 b ≤ 0，所以 |b| = -b
+                  calc
+                     -b
+                     _ = |b| := h2a1.symm  -- -b = |b|
+                     _ ≤ |b| := le_refl |b|  -- |b| ≤ |b|
+               | inr hb_pos =>  -- 情況 2.2：b ≥ 0
+                  have h2a1 : |b| = b := by rw [abs_of_nonneg hb_pos]  -- 因為 b ≥ 0，所以 |b| = b
+                  calc
+                     -b
+                     _ ≤ 0 := neg_nonpos.mpr hb_pos  -- 因為 b ≥ 0，所以 -b ≤ 0
+                     _ ≤ b := hb_pos  -- 因為 b ≥ 0，所以 0 ≤ b
+                     _ = |b| := h2a1.symm  -- b = |b|
+            calc
+               -a - b
+               _ = -a + (-b) := by rw [← sub_eq_add_neg]  -- -a - b = -a + (-b)
+               _ ≤ |a| + |b| := add_le_add h1 h2  -- 使用加法保序
+   | inr hab_pos =>  -- 情況 2：a + b ≥ 0
+      calc
+         |a + b|
+         _ = a + b := by rw [abs_of_nonneg hab_pos]  -- 因為 a + b ≥ 0，所以 |a + b| = a + b
+         _ ≤ |a| + |b| := by  -- 需要證明 a + b ≤ |a| + |b|
+            have h1 : a ≤ |a| := by  -- 證明 a ≤ |a|
+               have h1a : a ≤ 0 ∨ 0 ≤ a := le_total a 0  -- 對 a 分情況
+               cases h1a with
+               | inl ha_neg =>  -- 情況 2.1：a ≤ 0
+                  have h1a1 : |a| = -a := by rw [abs_of_nonpos ha_neg]  -- 因為 a ≤ 0，所以 |a| = -a
+                  calc
+                     a
+                     _ ≤ 0 := ha_neg  -- a ≤ 0
+                     _ ≤ -a := neg_nonneg.mpr ha_neg  -- 因為 a ≤ 0，所以 0 ≤ -a
+                     _ = |a| := h1a1.symm  -- -a = |a|
+               | inr ha_pos =>  -- 情況 2.2：a ≥ 0
+                  have h1a1 : |a| = a := by rw [abs_of_nonneg ha_pos]  -- 因為 a ≥ 0，所以 |a| = a
+                  calc
+                     a
+                     _ = |a| := h1a1.symm  -- a = |a|
+                     _ ≤ |a| := le_refl |a|  -- |a| ≤ |a|
+            have h2 : b ≤ |b| := by  -- 類似地證明 b ≤ |b|
+               have h2a : b ≤ 0 ∨ 0 ≤ b := le_total b 0  -- 對 b 分情況
+               cases h2a with
+               | inl hb_neg =>  -- 情況 2.3：b ≤ 0
+                  have h2a1 : |b| = -b := by rw [abs_of_nonpos hb_neg]  -- 因為 b ≤ 0，所以 |b| = -b
+                  calc
+                     b
+                     _ ≤ 0 := hb_neg  -- b ≤ 0
+                     _ ≤ -b := neg_nonneg.mpr hb_neg  -- 因為 b ≤ 0，所以 0 ≤ -b
+                     _ = |b| := h2a1.symm  -- -b = |b|
+               | inr hb_pos =>  -- 情況 2.4：b ≥ 0
+                  have h2a1 : |b| = b := by rw [abs_of_nonneg hb_pos]  -- 因為 b ≥ 0，所以 |b| = b
+                  calc
+                     b
+                     _ = |b| := h2a1.symm  -- b = |b|
+                     _ ≤ |b| := le_refl |b|  -- |b| ≤ |b|
+            exact add_le_add h1 h2  -- 使用加法保序
+   · -- 證明 ||a| - |b|| ≤ |a - b|（反向三角不等式）
+      -- 使用第一個不等式來證明第二個
+      -- 從 |a| = |(a - b) + b| ≤ |a - b| + |b| 得到 |a| - |b| ≤ |a - b|
+      have h1 : |a| - |b| ≤ |a - b| := by  -- 證明 |a| - |b| ≤ |a - b|
+         have h1a : |a| = |(a - b) + b| := by ring  -- |a| = |(a - b) + b|
+         -- 需要證明 |(a - b) + b| ≤ |a - b| + |b|，這需要重複使用第一個不等式的證明過程
+         have h1b : |(a - b) + b| ≤ |a - b| + |b| := by  -- 對 |(a - b) + b| 應用三角不等式
+            -- 重複第一個不等式的證明過程，對 (a - b) 和 b 應用
+            have h_ab2 : (a - b) + b ≤ 0 ∨ 0 ≤ (a - b) + b := le_total ((a - b) + b) 0  -- 對 (a - b) + b 分情況
+            cases h_ab2 with
+            | inl hab2_neg =>  -- 情況 1：(a - b) + b ≤ 0
+               calc
+                  |(a - b) + b|
+                  _ = -((a - b) + b) := by rw [abs_of_nonpos hab2_neg]  -- 因為 (a - b) + b ≤ 0，所以 |(a - b) + b| = -((a - b) + b)
+                  _ = -(a - b) - b := by ring  -- -((a - b) + b) = -(a - b) - b
+                  _ ≤ |a - b| + |b| := by  -- 需要證明 -(a - b) - b ≤ |a - b| + |b|
+                     have h1c : -(a - b) ≤ |a - b| := by  -- 證明 -(a - b) ≤ |a - b|
+                        have h1c1 : a - b ≤ 0 ∨ 0 ≤ a - b := le_total (a - b) 0
+                        cases h1c1 with
+                        | inl hab_neg2 =>
+                           have h1c2 : |a - b| = -(a - b) := by rw [abs_of_nonpos hab_neg2]
+                           calc
+                              -(a - b)
+                              _ = |a - b| := h1c2.symm
+                              _ ≤ |a - b| := le_refl |a - b|
+                        | inr hab_pos2 =>
+                           have h1c2 : |a - b| = a - b := by rw [abs_of_nonneg hab_pos2]
+                           calc
+                              -(a - b)
+                              _ ≤ 0 := neg_nonpos.mpr hab_pos2
+                              _ ≤ a - b := hab_pos2
+                              _ = |a - b| := h1c2.symm
+                     have h1d : -b ≤ |b| := by
+                        have h1d1 : b ≤ 0 ∨ 0 ≤ b := le_total b 0
+                        cases h1d1 with
+                        | inl hb_neg2 =>
+                           have h1d2 : |b| = -b := by rw [abs_of_nonpos hb_neg2]
+                           calc
+                              -b
+                              _ = |b| := h1d2.symm
+                              _ ≤ |b| := le_refl |b|
+                        | inr hb_pos2 =>
+                           have h1d2 : |b| = b := by rw [abs_of_nonneg hb_pos2]
+                           calc
+                              -b
+                              _ ≤ 0 := neg_nonpos.mpr hb_pos2
+                              _ ≤ b := hb_pos2
+                              _ = |b| := h1d2.symm
+                     calc
+                        -(a - b) - b
+                        _ = -(a - b) + (-b) := by rw [← sub_eq_add_neg]
+                        _ ≤ |a - b| + |b| := add_le_add h1c h1d
+            | inr hab2_pos =>
+               -- 類似第一個不等式的證明
+               calc
+                  |(a - b) + b|
+                  _ = (a - b) + b := by rw [abs_of_nonneg hab2_pos]
+                  _ ≤ |a - b| + |b| := by
+                     have h1c : a - b ≤ |a - b| := by
+                        have h1c1 : a - b ≤ 0 ∨ 0 ≤ a - b := le_total (a - b) 0
+                        cases h1c1 with
+                        | inl hab_neg2 =>
+                           have h1c2 : |a - b| = -(a - b) := by rw [abs_of_nonpos hab_neg2]
+                           calc
+                              a - b
+                              _ ≤ 0 := hab_neg2
+                              _ ≤ -(a - b) := neg_nonneg.mpr hab_neg2
+                              _ = |a - b| := h1c2.symm
+                        | inr hab_pos2 =>
+                           have h1c2 : |a - b| = a - b := by rw [abs_of_nonneg hab_pos2]
+                           calc
+                              a - b
+                              _ = |a - b| := h1c2.symm
+                              _ ≤ |a - b| := le_refl |a - b|
+                     have h1d : b ≤ |b| := by
+                        have h1d1 : b ≤ 0 ∨ 0 ≤ b := le_total b 0
+                        cases h1d1 with
+                        | inl hb_neg2 =>
+                           have h1d2 : |b| = -b := by rw [abs_of_nonpos hb_neg2]
+                           calc
+                              b
+                              _ ≤ 0 := hb_neg2
+                              _ ≤ -b := neg_nonneg.mpr hb_neg2
+                              _ = |b| := h1d2.symm
+                        | inr hb_pos2 =>
+                           have h1d2 : |b| = b := by rw [abs_of_nonneg hb_pos2]
+                           calc
+                              b
+                              _ = |b| := h1d2.symm
+                              _ ≤ |b| := le_refl |b|
+                     exact add_le_add h1c h1d
+         calc
+            |a| - |b|
+            _ = |(a - b) + b| - |b| := by rw [h1a]  -- 將 |a| 替換為 |(a - b) + b|
+            _ ≤ (|a - b| + |b|) - |b| := sub_le_sub_right h1b |b|  -- 使用減法保序
+            _ = |a - b| := by ring  -- 簡化得到 |a - b|
+      have h2 : -|a - b| ≤ |a| - |b| := by  -- 證明 -|a - b| ≤ |a| - |b|
+         -- 類似地，從 |b| = |(b - a) + a| ≤ |b - a| + |a| = |a - b| + |a| 得到
+         have h2a : |b| = |(b - a) + a| := by ring  -- |b| = |(b - a) + a|
+         have h2b : |(b - a) + a| ≤ |b - a| + |a| := by  -- 對 |(b - a) + a| 應用三角不等式
+            -- 類似 h1b 的證明
+            have h_ba : (b - a) + a ≤ 0 ∨ 0 ≤ (b - a) + a := le_total ((b - a) + a) 0
+            cases h_ba with
+            | inl hba_neg =>
+               calc
+                  |(b - a) + a|
+                  _ = -((b - a) + a) := by rw [abs_of_nonpos hba_neg]
+                  _ = -(b - a) - a := by ring
+                  _ ≤ |b - a| + |a| := by
+                     -- 類似前面的證明
+                     have h2c : -(b - a) ≤ |b - a| := by
+                        have h2c1 : b - a ≤ 0 ∨ 0 ≤ b - a := le_total (b - a) 0
+                        cases h2c1 with
+                        | inl hba_neg2 =>
+                           have h2c2 : |b - a| = -(b - a) := by rw [abs_of_nonpos hba_neg2]
+                           calc
+                              -(b - a)
+                              _ = |b - a| := h2c2.symm
+                              _ ≤ |b - a| := le_refl |b - a|
+                        | inr hba_pos2 =>
+                           have h2c2 : |b - a| = b - a := by rw [abs_of_nonneg hba_pos2]
+                           calc
+                              -(b - a)
+                              _ ≤ 0 := neg_nonpos.mpr hba_pos2
+                              _ ≤ b - a := hba_pos2
+                              _ = |b - a| := h2c2.symm
+                     have h2d : -a ≤ |a| := by
+                        have h2d1 : a ≤ 0 ∨ 0 ≤ a := le_total a 0
+                        cases h2d1 with
+                        | inl ha_neg2 =>
+                           have h2d2 : |a| = -a := by rw [abs_of_nonpos ha_neg2]
+                           calc
+                              -a
+                              _ = |a| := h2d2.symm
+                              _ ≤ |a| := le_refl |a|
+                        | inr ha_pos2 =>
+                           have h2d2 : |a| = a := by rw [abs_of_nonneg ha_pos2]
+                           calc
+                              -a
+                              _ ≤ 0 := neg_nonpos.mpr ha_pos2
+                              _ ≤ a := ha_pos2
+                              _ = |a| := h2d2.symm
+                     calc
+                        -(b - a) - a
+                        _ = -(b - a) + (-a) := by rw [← sub_eq_add_neg]
+                        _ ≤ |b - a| + |a| := add_le_add h2c h2d
+            | inr hba_pos =>
+               calc
+                  |(b - a) + a|
+                  _ = (b - a) + a := by rw [abs_of_nonneg hba_pos]
+                  _ ≤ |b - a| + |a| := by
+                     have h2c : b - a ≤ |b - a| := by
+                        have h2c1 : b - a ≤ 0 ∨ 0 ≤ b - a := le_total (b - a) 0
+                        cases h2c1 with
+                        | inl hba_neg2 =>
+                           have h2c2 : |b - a| = -(b - a) := by rw [abs_of_nonpos hba_neg2]
+                           calc
+                              b - a
+                              _ ≤ 0 := hba_neg2
+                              _ ≤ -(b - a) := neg_nonneg.mpr hba_neg2
+                              _ = |b - a| := h2c2.symm
+                        | inr hba_pos2 =>
+                           have h2c2 : |b - a| = b - a := by rw [abs_of_nonneg hba_pos2]
+                           calc
+                              b - a
+                              _ = |b - a| := h2c2.symm
+                              _ ≤ |b - a| := le_refl |b - a|
+                     have h2d : a ≤ |a| := by
+                        have h2d1 : a ≤ 0 ∨ 0 ≤ a := le_total a 0
+                        cases h2d1 with
+                        | inl ha_neg2 =>
+                           have h2d2 : |a| = -a := by rw [abs_of_nonpos ha_neg2]
+                           calc
+                              a
+                              _ ≤ 0 := ha_neg2
+                              _ ≤ -a := neg_nonneg.mpr ha_neg2
+                              _ = |a| := h2d2.symm
+                        | inr ha_pos2 =>
+                           have h2d2 : |a| = a := by rw [abs_of_nonneg ha_pos2]
+                           calc
+                              a
+                              _ = |a| := h2d2.symm
+                              _ ≤ |a| := le_refl |a|
+                     exact add_le_add h2c h2d
+         calc
+            -|a - b|
+            _ = -|b - a| := by rw [abs_sub_comm]  -- |a - b| = |b - a|
+            _ ≤ -(|b| - |a|) := by  -- 需要證明 -|b - a| ≤ -(|b| - |a|)
+               -- 從 |b| ≤ |b - a| + |a| 得到 |b| - |a| ≤ |b - a|
+               -- 所以 -|b - a| ≤ -(|b| - |a|)
+               have h2c : |b| - |a| ≤ |b - a| := by  -- 證明 |b| - |a| ≤ |b - a|
+                  calc
+                     |b| - |a|
+                     _ = |(b - a) + a| - |a| := by rw [h2a]  -- 將 |b| 替換為 |(b - a) + a|
+                     _ ≤ (|b - a| + |a|) - |a| := sub_le_sub_right h2b |a|  -- 使用減法保序
+                     _ = |b - a| := by ring  -- 簡化得到 |b - a|
+               exact neg_le_neg h2c  -- 使用負數保序（方向反轉）
+            _ = |a| - |b| := by ring  -- 簡化得到 |a| - |b|
+      exact abs_le.mpr ⟨h2, h1⟩  -- 從 -|a - b| ≤ |a| - |b| ≤ |a - b| 得到 ||a| - |b|| ≤ |a - b|
+
+-- 定理 1.9(1)：對於任意實數 x, y，有 (∀ ε > 0, x < y + ε) ↔ x ≤ y
+-- 這個定理說明：x 小於等於 y 若且唯若對於所有正數 ε，x 都小於 y + ε
+theorem Theorem_1_9_1 (x y : ℝ) : (∀ ε > 0, x < y + ε) ↔ x ≤ y := by
+   constructor  -- 分別處理雙向等價的兩個方向
+   intro h  -- 方向 1：假設 ∀ ε > 0, x < y + ε
+   by_contra h_not  -- 假設 ¬(x ≤ y)，即 x > y（反證法）
+   push_neg at h_not  -- 將 ¬(x ≤ y) 轉換為 x > y
+   have h1 : x - y > 0 := by  -- 從 x > y 得到 x - y > 0
+      calc
+         x - y
+         _ > y - y := sub_lt_sub_right h_not y  -- 從 x > y 得到 x - y > y - y
+         _ = 0 := sub_self y  -- y - y = 0
+   have h2 : x < y + (x - y) := h (x - y) h1  -- 對 ε = x - y 應用假設 h
+   have h3 : y + (x - y) = x := by ring  -- y + (x - y) = x
+   rw [h3] at h2  -- 將 y + (x - y) 替換為 x
+   exact lt_irrefl x h2  -- 矛盾：x < x
+   intro h ε hε  -- 方向 2：假設 x ≤ y，引入任意 ε > 0
+   have h_cases : x < y ∨ x = y := lt_or_eq_of_le h  -- 從 x ≤ y 得到 x < y 或 x = y
+   cases h_cases with
+   | inl h_lt =>  -- 情況 1：x < y
+      calc
+         x
+         _ < y := h_lt  -- x < y
+         _ < y + ε := lt_add_of_pos_right y hε  -- 因為 ε > 0，所以 y < y + ε
+   | inr h_eq =>  -- 情況 2：x = y
+      calc
+         x
+         _ = y := h_eq  -- x = y
+         _ < y + ε := lt_add_of_pos_right y hε  -- 因為 ε > 0，所以 y < y + ε
+
+-- 定理 1.9(2)：對於任意實數 x, y，有 (∀ ε > 0, x > y - ε) ↔ x ≥ y
+-- 這個定理說明：x 大於等於 y 若且唯若對於所有正數 ε，x 都大於 y - ε
+theorem Theorem_1_9_2 (x y : ℝ) : (∀ ε > 0, x > y - ε) ↔ x ≥ y := by
+   constructor  -- 分別處理雙向等價的兩個方向
+   intro h  -- 方向 1：假設 ∀ ε > 0, x > y - ε
+   by_contra h_not  -- 假設 ¬(x ≥ y)，即 x < y（反證法）
+   push_neg at h_not  -- 將 ¬(x ≥ y) 轉換為 x < y
+   have h1 : y - x > 0 := by  -- 從 x < y 得到 y - x > 0
+      calc
+         y - x
+         _ > x - x := sub_lt_sub_right h_not x  -- 從 x < y 得到 y - x > x - x
+         _ = 0 := sub_self x  -- x - x = 0
+   have h2 : x > y - (y - x) := h (y - x) h1  -- 對 ε = y - x 應用假設 h
+   have h3 : y - (y - x) = x := by ring  -- y - (y - x) = x
+   rw [h3] at h2  -- 將 y - (y - x) 替換為 x
+   exact lt_irrefl x h2  -- 矛盾：x > x
+   intro h ε hε  -- 方向 2：假設 x ≥ y，引入任意 ε > 0
+   have h_cases : y < x ∨ y = x := lt_or_eq_of_le h  -- 從 x ≥ y（即 y ≤ x）得到 y < x 或 y = x
+   cases h_cases with
+   | inl h_lt =>  -- 情況 1：y < x，即 x > y
+      calc
+         x
+         _ > y := h_lt  -- 從 y < x 得到 x > y
+         _ > y - ε := by  -- 需要證明 y > y - ε
+            calc
+               y
+               _ = y - 0 := by ring  -- y = y - 0
+               _ > y - ε := sub_lt_sub_left hε y  -- 從 0 < ε 得到 y - 0 > y - ε
+   | inr h_eq =>  -- 情況 2：y = x，即 x = y
+      calc
+         x
+         _ = y := h_eq.symm  -- x = y
+         _ > y - ε := by  -- 需要證明 y > y - ε
+            calc
+               y
+               _ = y - 0 := by ring  -- y = y - 0
+               _ > y - ε := sub_lt_sub_left hε y  -- 從 0 < ε 得到 y - 0 > y - ε
+
+-- (3) |a| < ε, ∀ ε > 0 ↔ a = 0
+theorem Theorem_1_9_3 (a : ℝ) : (∀ ε > 0, |a| < ε) ↔ a = 0 := by
+   constructor  -- 分別處理雙向等價的兩個方向
+   intro h  -- 方向 1：假設 ∀ ε > 0, |a| < ε
+   have h1 : ∀ ε > 0, |a| < 0 + ε := by  -- 將 |a| < ε 改寫為 |a| < 0 + ε
+      intro ε hε  -- 引入 ε 和 ε > 0
+      calc
+         |a|
+         _ < ε := h ε hε  -- 應用 h
+         _ = 0 + ε := by ring  -- ε = 0 + ε
+   have h2 : |a| ≤ 0 := (Theorem_1_9_1 |a| 0).1 h1  -- 使用 Theorem 1.9(1) 得到 |a| ≤ 0
+   have h3 : |a| ≥ 0 := abs_nonneg a  -- |a| ≥ 0（絕對值非負）
+   have h4 : |a| = 0 := le_antisymm h2 h3  -- 從 |a| ≤ 0 和 |a| ≥ 0 得到 |a| = 0
+   have h5 : a = 0 := (Theorem_1_7_1 a).1 ⟨h3, h4⟩  -- 使用 Theorem 1.7(1) 得到 a = 0
+   exact h5  -- 完成方向 1 的證明
+   intro h  -- 方向 2：假設 a = 0
+   have h1 : |a| ≥ 0 ∧ |a| = 0 := (Theorem_1_7_1 a).mpr h  -- 使用 Theorem 1.7(1) 得到 |a| ≥ 0 ∧ |a| = 0
+   have h2 : |a| = 0 := h1.2  -- 提取 |a| = 0
+   have h3 : ∀ ε > 0, |a| < ε := by  -- 證明 ∀ ε > 0, |a| < ε
+      intro ε hε  -- 引入 ε 和 ε > 0
+      calc
+         |a|
+         _ = 0 := h2  -- |a| = 0
+         _ < ε := hε  -- 0 < ε
+   exact h3  -- 完成方向 2 的證明
+
 -- 絕對值的三角不等式
 -- 語法：`|a|` 是絕對值的記號，`≤` 是小於等於
 -- 三角不等式：|a + b| ≤ |a| + |b|
@@ -751,4 +1143,34 @@ theorem Theorem_1_7_1 (a : ℝ) : |a| ≥ 0 ∧ |a| = 0 ↔ a = 0 := by
 -- 語法：`↔` 表示雙向蘊含（若且唯若，iff）
 -- `abs_eq_zero` 表示：|a| = 0 若且唯若 a = 0
 
+-- 定義 1.10：上界與上確界
+def is_upper_bound (M : ℝ) (E : Set ℝ) : Prop :=
+   ∀ a ∈ E, a ≤ M  -- M 是集合 E 的上界：對所有 a ∈ E，有 a ≤ M
+
+def bounded_above (E : Set ℝ) : Prop :=
+   ∃ M : ℝ, is_upper_bound M E  -- 集合 E 有上界：存在 M 使得 M 是 E 的上界
+
+def is_supremum (s : ℝ) (E : Set ℝ) : Prop :=
+   is_upper_bound s E ∧ (∀ M : ℝ, is_upper_bound M E → s ≤ M)  -- s 是 E 的上確界：s 是上界，且是所有上界中最小的
+
+-- Example 1.11. If E = [0, 1],prove that sup E = 1.
+theorem Example_1_11 : is_supremum 1 (Set.Icc 0 1) := by
+   constructor  -- 分開 is_supremum 的兩個部分：上界性和最小性
+   intro x hx  -- 第一部分：引入 x 和 x ∈ [0, 1]
+   exact hx.2  -- 從 x ∈ [0, 1] 得到 x ≤ 1（hx.2 提取第二個條件）
+   intro M hM  -- 第二部分：引入 M 和 hM : M 是 [0, 1] 的上界
+   by_contra h_not  -- 假設 ¬(1 ≤ M)（反證法）
+   push_neg at h_not  -- 將 ¬(1 ≤ M) 轉換為 M < 1
+   have h1_in : (1 : ℝ) ∈ Set.Icc (0 : ℝ) 1 := by  -- 證明 1 ∈ [0, 1]
+      exact ⟨ by norm_num, by norm_num ⟩  -- 0 ≤ 1 且 1 ≤ 1（norm_num 自動證明）
+   have h_contra : 1 ≤ M := hM 1 h1_in  -- 因為 M 是上界，所以 1 ≤ M
+   have h : (1 : ℝ) < 1 := lt_of_le_of_lt h_contra h_not  -- 從 1 ≤ M 和 M < 1 得到 1 < 1
+   exact lt_irrefl (1 : ℝ) h  -- 1 < 1 矛盾（lt_irrefl 表示一個數不能嚴格小於自己）
+
+-- Remark 1.12. If a set has one upper bound, it has infinitely many upper bounds.
+theorem Remark_1_12 (E : Set ℝ) (M : ℝ) (hM : is_upper_bound M E) :
+   ∀ N : ℝ, N ≥ M → is_upper_bound N E := by
+   intro N hN a ha  -- 引入 N、N ≥ M、a 和 a ∈ E
+   have h1 : a ≤ M := hM a ha  -- 因為 M 是上界，所以 a ≤ M
+   exact le_trans h1 hN  -- 從 a ≤ M 和 M ≤ N 得到 a ≤ N（傳遞性）
 end WadeAnalysis
