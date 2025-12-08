@@ -1278,4 +1278,117 @@ theorem Theorem_1_15 (E : Set ℤ) (s : ℝ) (hs : is_supremum s (E.image (Int.c
          _ < (1 : ℝ) := h17.2  -- 從 h17 得到 ↑m - ↑n < 1
    exact h18 ⟨m - n, h22, h23⟩  -- 與 h18 矛盾（存在整數 m - n 使得 0 < ↑(m - n) < 1）
 
+-- Completeness Axiom : If E is a nonempty subset of ℝ that is bounded above,
+-- then E has a finite supremum.
+
+-- Theorem 1.16 : Given real numbers a and b, with a > 0, there is an integer n ∈ ℕ such that b < na.
+theorem Theorem_1_16 (a b : ℝ) (ha : a > 0) :  -- 定理 1.16（阿基米德性質）：給定正實數 a 和任意實數 b
+   ∃ n : ℕ, b < n * a := by  -- 存在自然數 n 使得 b < n * a
+   by_cases h_case : b < a  -- 情況分析：b < a 或 a ≤ b
+   use 1  -- 若 b < a，取 n = 1
+   simp  -- 簡化目標為 b < a
+   exact h_case  -- 用假設 b < a 完成證明
+   push_neg at h_case  -- 否則，將 ¬(b < a) 轉換為 a ≤ b
+   let E : Set ℝ := {x : ℝ | ∃ k : ℕ, x = (k : ℝ) * a ∧ (k : ℝ) * a ≤ b}  -- 定義集合 E = {ka | k ∈ ℕ 且 ka ≤ b}
+   have h_nonempty : Set.Nonempty E := by  -- 證明 E 非空
+      use (1 : ℝ) * a  -- 提供元素 1 * a
+      use 1  -- 提供自然數 k = 1
+      constructor  -- 證明合取：(1) 1 * a = 1 * a，(2) 1 * a ≤ b
+      · simp  -- 證明等式 (1 : ℝ) * a = (1 : ℝ) * a
+      · simp  -- 簡化 1 * a 為 a
+        exact h_case  -- 使用 a ≤ b 證明 1 * a ≤ b
+   have h_bounded : bounded_above E := by  -- 證明 E 有上界
+      use b  -- 聲稱 b 是 E 的上界
+      intro x hx  -- 對任意 x ∈ E
+      obtain ⟨ k, hk_eq, hk_le⟩ := hx  -- 從 x ∈ E 得到：x = ka 且 ka ≤ b
+      rw [hk_eq]  -- 將 x 改寫為 ka
+      exact hk_le  -- 用 ka ≤ b 證明 x ≤ b
+   have h_sup : ∃ s : ℝ, is_supremum s E := by  -- 證明 E 有上確界
+      have h_bdd : BddAbove E := by  -- 先將 bounded_above 轉換為 Mathlib 的 BddAbove
+         obtain ⟨M, hM⟩ := h_bounded  -- 從 bounded_above E 取得上界 M
+         use M  -- 用 M 構造 BddAbove 的證明
+         exact hM  -- M 是 E 的上界
+      use sSup E  -- 應用完備性公設：使用 Mathlib 的 sSup（上確界）
+      constructor  -- 證明 sSup E 滿足上確界的兩個性質
+      · intro x hx  -- (1) sSup E 是上界：對任意 x ∈ E
+        exact le_csSup h_bdd hx  -- 用 Mathlib 定理證明 x ≤ sSup E
+      · intro M hM  -- (2) sSup E 是最小上界：對任意 E 的上界 M
+        exact csSup_le h_nonempty hM  -- 用 Mathlib 定理證明 sSup E ≤ M
+   obtain ⟨s, hs_sup⟩ := h_sup  -- 取得上確界 s 及其性質 hs_sup
+   have h_s_in_E : s ∈ E := by  -- 證明 s ∈ E（關鍵步驟）
+      by_contra h_not  -- 反證法：假設 s ∉ E
+      have h_eps_pos : a / 2 > 0 := div_pos ha (by norm_num)  -- a / 2 > 0（因為 a > 0）
+      have h_approx : ∃ x ∈ E, s - (a / 2) < x ∧ x ≤ s :=  -- 由定理 1.14（上確界逼近性質）
+         Theorem_1_14 E s hs_sup (a / 2) h_eps_pos  -- 存在 x ∈ E 使得 s - a/2 < x ≤ s
+      obtain ⟨x, hx_in, hx_left, hx_right⟩ := h_approx  -- 取得這樣的 x 及其性質
+      obtain ⟨k, hk_eq, hk_le⟩ := hx_in  -- 從 x ∈ E 得到：x = ka 且 ka ≤ b
+      have h_x_lt_s : x < s := by  -- 證明 x < s（嚴格小於）
+         by_contra h_ge  -- 反證法：假設 ¬(x < s)
+         push_neg at h_ge  -- 轉換為 s ≤ x
+         have h_eq : x = s := le_antisymm hx_right h_ge  -- 由 x ≤ s 和 s ≤ x 得 x = s
+         rw [hk_eq] at h_eq  -- 將 x = ka 代入得 ka = s
+         have h_s_in : s ∈ E := by  -- 這表示 s ∈ E
+            use k  -- 見證者為 k
+            exact ⟨h_eq.symm, hk_le⟩  -- s = ka 且 ka ≤ b
+         exact h_not h_s_in  -- 矛盾：s ∈ E 但我們假設 s ∉ E
+      have h_gap : s - x > 0 := sub_pos.mpr h_x_lt_s  -- 由 x < s 得 s - x > 0
+      have h_approx2 : ∃ y ∈ E, s - (s - x) < y ∧ y ≤ s :=  -- 再次應用定理 1.14
+         Theorem_1_14 E s hs_sup (s - x) h_gap  -- 存在 y ∈ E 使得 x < y ≤ s
+      obtain ⟨y, hy_in, hy_left, hy_right⟩ := h_approx2  -- 取得這樣的 y
+      obtain ⟨m, hm_eq, hm_le⟩ := hy_in  -- 從 y ∈ E 得到：y = ma 且 ma ≤ b
+      have h_y_gt_x : y > x := by  -- 證明 y > x
+         have h10 : x = s - (s - x) := by ring  -- 代數計算：x = s - (s - x)
+         rw [h10]  -- 改寫目標
+         exact hy_left  -- 由 s - (s - x) < y 得證
+      rw [hk_eq, hm_eq] at h_y_gt_x  -- 改寫為 ma > ka
+      have h_m_gt_k : (m : ℕ) > k := by  -- 證明 m > k（作為自然數）
+         by_contra h_le  -- 反證法：假設 ¬(m > k)
+         push_neg at h_le  -- 轉換為 m ≤ k
+         have h_m_le_k : (m : ℝ) ≤ (k : ℝ) := Nat.cast_le.mpr h_le  -- 轉型到實數：m ≤ k
+         have h_mul_le : (m : ℝ) * a ≤ (k : ℝ) * a := by  -- 兩邊乘以 a
+            have h_pos : 0 ≤ a := le_of_lt ha  -- a ≥ 0
+            exact mul_le_mul_of_nonneg_right h_m_le_k h_pos  -- 得 ma ≤ ka
+         linarith  -- 矛盾：ma ≤ ka 但 ma > ka
+      have h_m_ge_k1 : (m : ℕ) ≥ k + 1 := Nat.succ_le_of_lt h_m_gt_k  -- 由 m > k 得 m ≥ k + 1
+      have h_n_in_E : ((k + 1 : ℕ) : ℝ) * a ∈ E := by  -- 證明 (k+1)a ∈ E
+         have h_k1_le_b : ((k + 1 : ℕ) : ℝ) * a ≤ b := by  -- 證明 (k+1)a ≤ b
+            have h_mul_le : ((k + 1 : ℕ) : ℝ) * a ≤ (m : ℝ) * a := by  -- 先證 (k+1)a ≤ ma
+               have h_nat_le : (k + 1 : ℕ) ≤ m := h_m_ge_k1  -- k + 1 ≤ m
+               have h_cast_le : ((k + 1 : ℕ) : ℝ) ≤ (m : ℝ) := Nat.cast_le.mpr h_nat_le  -- 轉型到實數
+               have h_pos : 0 ≤ a := le_of_lt ha  -- a ≥ 0
+               exact mul_le_mul_of_nonneg_right h_cast_le h_pos  -- 兩邊乘以 a
+            have h_y_le_s : y ≤ s := hy_right  -- y ≤ s
+            have h_s_le_b : s ≤ b := by  -- 證明 s ≤ b
+               have h_b_ub : is_upper_bound b E := by  -- b 是 E 的上界
+                  intro z hz  -- 對任意 z ∈ E
+                  obtain ⟨n, hn_eq, hn_le⟩ := hz  -- z = na 且 na ≤ b
+                  rw [hn_eq]  -- 改寫 z 為 na
+                  exact hn_le  -- z = na ≤ b
+               exact hs_sup.2 b h_b_ub  -- s 是最小上界，所以 s ≤ b
+            have h_m_le_b : (m : ℝ) * a ≤ b := hm_le  -- ma ≤ b
+            linarith  -- 由 (k+1)a ≤ ma 和 ma ≤ b 得 (k+1)a ≤ b
+         use k + 1, rfl, h_k1_le_b  -- 構造證明：(k+1)a = (k+1)a 且 (k+1)a ≤ b
+      have h_n_gt_s : ((k + 1 : ℕ) : ℝ) * a > s := by  -- 證明 (k+1)a > s
+         have h_add : ((k + 1 : ℕ) : ℝ) * a = (k : ℝ) * a + a := by simp; ring  -- (k+1)a = ka + a
+         rw [h_add]  -- 改寫目標為 ka + a > s
+         have h_x_eq : x = (k : ℝ) * a := hk_eq  -- x = ka
+         rw [← h_x_eq]  -- 改寫為 x + a > s
+         linarith  -- 由 s - x < a/2 < a 推得 x + a > s
+      have h_n_le_s : ((k + 1 : ℕ) : ℝ) * a ≤ s := hs_sup.1 _ h_n_in_E  -- 由 (k+1)a ∈ E 和 s 是上界得 (k+1)a ≤ s
+      linarith  -- 矛盾：(k+1)a > s 且 (k+1)a ≤ s，所以原假設 s ∉ E 不成立
+   obtain ⟨k, hk_eq, hk_le⟩ := h_s_in_E  -- 從 s ∈ E 得到：s = ka 且 ka ≤ b
+   use k + 1  -- 取 n = k + 1
+   by_cases h_case2 : ((k + 1 : ℕ) : ℝ) * a ≤ b  -- 情況分析：(k+1)a ≤ b 或 b < (k+1)a
+   · have h_n_in_E : ((k + 1 : ℕ) : ℝ) * a ∈ E := ⟨k + 1, rfl, h_case2⟩  -- 若 (k+1)a ≤ b，則 (k+1)a ∈ E
+     have h_gt : ((k + 1 : ℕ) : ℝ) * a > s := by  -- 證明 (k+1)a > s
+        have h_add : ((k + 1 : ℕ) : ℝ) * a = (k : ℝ) * a + a := by simp; ring  -- (k+1)a = ka + a
+        rw [h_add, ← hk_eq]  -- 改寫為 s + a > s（因為 s = ka）
+        linarith  -- 由 a > 0 得 s + a > s
+     have h_le : ((k + 1 : ℕ) : ℝ) * a ≤ s := hs_sup.1 _ h_n_in_E  -- 由 (k+1)a ∈ E 和 s 是上界得 (k+1)a ≤ s
+     have h_s_lt_s : s < s := by  -- 推出矛盾：s < s
+        have h_lt : s < ((k + 1 : ℕ) : ℝ) * a := gt_iff_lt.mp h_gt  -- 由 (k+1)a > s 得 s < (k+1)a
+        exact lt_of_lt_of_le h_lt h_le  -- 由 s < (k+1)a 和 (k+1)a ≤ s 得 s < s
+     exact False.elim (lt_irrefl s h_s_lt_s)  -- 矛盾消去：由 s < s（不可能）證明任何結論
+   · push_neg at h_case2  -- 否則，¬((k+1)a ≤ b) 即 b < (k+1)a
+     exact h_case2  -- 這正是我們要證明的目標 b < (k+1)a
 end WadeAnalysis
