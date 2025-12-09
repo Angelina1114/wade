@@ -3332,6 +3332,1236 @@ theorem Theorem_1_16 (a b : ℝ) (ha : a > 0) :  -- 定理 1.16（阿基米德�
 
 ---
 
+## 定理 1.18：有理數的稠密性（Density of Rationals）
+
+### 問題陳述
+
+**定理 1.18（有理數稠密性）**：若 \(a, b \in \mathbb{R}\) 滿足 \(a < b\)，則存在有理數 \(q \in \mathbb{Q}\)，使得
+\[
+a < q < b
+\]
+
+**說明**：這個定理說明，在任意兩個不相等的實數之間，總能找到一個有理數。換句話說，有理數在實數中是「稠密的」（dense）。
+
+**幾何直觀**：想像數線上任意兩個點 \(a\) 和 \(b\)，無論它們靠得多近，中間總能找到一個有理數點。這意味著有理數在實數軸上「到處都是」。
+
+**重要性**：
+- 這是實數理論的基本性質之一
+- 說明了有理數雖然是可數集，但在實數中「無處不在」
+- 是有理數逼近實數的理論基礎
+- 在數值分析和計算中有重要應用
+
+### 證明策略
+
+這個證明巧妙地結合了阿基米德性質（定理 1.16）和整數的 floor 函數。主要思路如下：
+
+#### **核心想法**
+
+要在 \(a\) 和 \(b\) 之間找一個有理數 \(q = \frac{m}{n}\)，其中 \(m \in \mathbb{Z}\)，\(n \in \mathbb{N}\)。
+
+**策略**：
+1. 先用阿基米德性質找一個足夠大的 \(n\)，使得 \(\frac{1}{n} < b - a\)
+2. 再找一個整數 \(m\)，使得 \(n \cdot a < m \leq n \cdot a + 1\)
+3. 那麼 \(q = \frac{m}{n}\) 就會落在 \((a, b)\) 之間
+
+#### **詳細步驟**
+
+**第一步：證明區間長度為正**
+- 從 \(a < b\) 得到 \(0 < b - a\)
+
+**第二步：應用阿基米德性質找合適的 \(n\)**
+- 應用定理 1.16 於 \(b - a\) 和 \(1\)：存在 \(n \in \mathbb{N}\) 使得 \(1 < n \cdot (b - a)\)
+- 證明 \(n > 0\)（用反證法）
+
+**第三步：推導 \(\frac{1}{n} < b - a\)**
+- 從 \(1 < n \cdot (b - a)\) 和 \(n > 0\) 推出
+- 這保證了 \(a + \frac{1}{n} < b\)
+
+**第四步：構造整數 \(m\)**
+- 定義 \(m := \lfloor n \cdot a \rfloor + 1\)（大於 \(n \cdot a\) 的最小整數）
+- 證明 \(n \cdot a < m\)（floor 函數的性質）
+- 證明 \(m \leq n \cdot a + 1\)（floor 函數的性質）
+
+**第五步：構造有理數 \(q = \frac{m}{n}\)**
+- 定義 \(q := \frac{m}{n} \in \mathbb{Q}\)
+
+**第六步：證明 \(a < q\)**
+- 從 \(n \cdot a < m\) 得到 \(a = \frac{n \cdot a}{n} < \frac{m}{n} = q\)
+
+**第七步：證明 \(q < b\)**
+- 從 \(m \leq n \cdot a + 1\) 得到：
+  \[
+  q = \frac{m}{n} \leq \frac{n \cdot a + 1}{n} = a + \frac{1}{n} < a + (b - a) = b
+  \]
+
+### Lean 4 完整證明（帶詳細註解）
+
+```lean
+-- Theorem 1.18 : If a, b ∈ ℝ satisfy a < b, then there is a q ∈ ℚ ∋ a < q < b.
+theorem Theorem_1_18 (a b : ℝ) (hab : a < b) : ∃ q : ℚ, a < q ∧ q < b := by  -- 定理 1.18：有理數稠密性，給定 a < b，存在有理數 q 使得 a < q < b
+   have h_pos : 0 < b - a := sub_pos.mpr hab  -- 由 a < b 得到 0 < b - a
+   have h_arch1 : ∃ n : ℕ, (1 : ℝ) < n * (b - a) := Theorem_1_16 (b - a) 1 h_pos  -- 由阿基米德性質得到存在自然數 n 使得 1 < n * (b - a)
+   obtain ⟨n, hn_gt⟩ := h_arch1  -- 取出這樣的 n，並記 hn_gt : 1 < n * (b - a)
+   have hn_pos : (n : ℝ) > 0 := by  -- 證明 n > 0（反證法）
+      by_contra h_neg  -- 假設 n 不大於 0
+      push_neg at h_neg  -- 轉換為 n ≤ 0
+      have hn_noneg : (n : ℝ) ≥ 0 := Nat.cast_nonneg n  -- 但自然數必定 ≥ 0
+      have hn_zero : (n : ℝ) = 0 := le_antisymm h_neg hn_noneg  -- 所以 n = 0
+      rw [hn_zero] at hn_gt  -- 代入得 1 < 0 * (b - a)
+      simp at hn_gt  -- 化簡得 1 < 0
+      norm_num at hn_gt  -- 這是矛盾，完成反證
+   have h_inv : (1 : ℝ) / n < b - a := by  -- 證明 1/n < b - a
+      have hn_ne : (n : ℝ) ≠ 0 := ne_of_gt hn_pos  -- n > 0 故 n ≠ 0
+      suffices 1 < n * (b - a) by  -- 只需證明 1 < n * (b - a)（反向推理）
+         calc (1 : ℝ) / n  -- 計算鏈證明 1/n < b - a
+            _ = 1 / n * 1 := by ring  -- 1/n = (1/n) * 1
+            _ < 1 / n * (n * (b - a)) := by  -- (1/n) * 1 < (1/n) * (n * (b - a))
+               apply mul_lt_mul_of_pos_left this  -- 由 1 < n * (b - a) 和 1/n > 0 得證
+               exact div_pos one_pos hn_pos  -- 確認 1/n > 0
+            _ = b - a := by field_simp  -- (1/n) * n * (b - a) = b - a
+      exact hn_gt  -- 而 1 < n * (b - a) 即為 hn_gt
+   let m : ℤ := Int.floor (n * a) + 1  -- 定義 m 為大於 n*a 的最小整數：m = ⌊n*a⌋ + 1
+   have hm_gt : (n : ℝ) * a < m := by  -- 證明 n * a < m
+      calc (n : ℝ) * a  -- 計算鏈
+        _ < ↑⌊n * a⌋ + 1 := Int.lt_floor_add_one (n * a)  -- n*a < ⌊n*a⌋ + 1（floor 的性質）
+        _ = ↑(⌊n * a⌋ + 1) := by norm_cast  -- 類型轉換：實數加法轉整數加法
+        _ = ↑(Int.floor (n * a) + 1) := rfl  -- 即為 m 的定義
+   have hm_le : (m : ℝ) ≤ (n : ℝ) * a + 1 := by  -- 證明 m ≤ n*a + 1
+      calc (m : ℝ)  -- 計算鏈
+        _ = ↑(Int.floor (n * a) + 1) := by rfl  -- m 的定義
+        _ = ↑⌊n * a⌋ + 1 := by norm_cast  -- 類型轉換：整數加法轉實數加法
+        _ ≤ (n * a) + 1 := by linarith [Int.floor_le (n * a)]  -- 因為 ⌊n*a⌋ ≤ n*a（floor 的性質）
+   let q : ℚ := m / n  -- 構造有理數 q = m/n
+   have hq_real : (q : ℝ) = (m : ℝ) / (n : ℝ) := by  -- 證明有理數 q 轉實數等於 m/n
+      simp only [q, Rat.cast_div, Rat.cast_intCast, Rat.cast_natCast]  -- 展開有理數到實數的轉換
+   use q  -- 使用 q 作為所求的有理數
+   constructor  -- 需要證明 a < q 且 q < b 兩個目標
+   -- 證明 a < q
+   calc (a : ℝ)  -- 計算鏈證明 a < q（在實數域）
+     _ = (n : ℝ) * a / n := by field_simp  -- a = (n*a) / n
+     _ < (m : ℝ) / n := by exact div_lt_div_of_pos_right hm_gt hn_pos  -- (n*a)/n < m/n（因為 n*a < m 且 n > 0）
+     _ = (q : ℝ) := hq_real.symm  -- m/n = q（在實數域）
+   -- 證明 q < b
+   calc (q : ℝ)  -- 計算鏈證明 q < b（在實數域）
+     _ = (m : ℝ) / n := hq_real  -- q = m/n（在實數域）
+     _ ≤ ((n : ℝ) * a + 1) / n := by exact div_le_div_of_nonneg_right hm_le (le_of_lt hn_pos)  -- m/n ≤ (n*a + 1)/n（因為 m ≤ n*a + 1 且 n > 0）
+     _ = (n : ℝ) * a / n + 1 / n := by ring  -- (n*a + 1)/n = (n*a)/n + 1/n
+     _ = a + 1 / n := by field_simp  -- (n*a)/n + 1/n = a + 1/n
+     _ < a + (b - a) := by linarith [h_inv]  -- a + 1/n < a + (b - a)（因為 1/n < b - a）
+     _ = (b : ℝ) := by ring  -- a + (b - a) = b
+```
+
+### 證明步驟詳解
+
+#### 1. 準備工作（第 1397-1407 行）
+
+**目標**：建立基本的不等式和找到合適的 \(n\)
+
+```lean
+have h_pos : 0 < b - a := sub_pos.mpr hab
+```
+- **作用**：從假設 \(a < b\) 推導出 \(0 < b - a\)
+- **原理**：使用 `sub_pos` 定理：\(a < b \Leftrightarrow 0 < b - a\)
+
+```lean
+have h_arch1 : ∃ n : ℕ, (1 : ℝ) < n * (b - a) := Theorem_1_16 (b - a) 1 h_pos
+```
+- **作用**：應用阿基米德性質
+- **輸入**：\(a = b - a > 0\)，\(b = 1\)
+- **輸出**：存在 \(n \in \mathbb{N}\) 使得 \(1 < n \cdot (b - a)\)
+
+```lean
+obtain ⟨n, hn_gt⟩ := h_arch1
+```
+- **作用**：解構存在性命題，得到具體的 \(n\) 和證據 `hn_gt : 1 < n * (b - a)`
+
+```lean
+have hn_pos : (n : ℝ) > 0 := by
+   by_contra h_neg
+   push_neg at h_neg
+   have hn_noneg : (n : ℝ) ≥ 0 := Nat.cast_nonneg n
+   have hn_zero : (n : ℝ) = 0 := le_antisymm h_neg hn_noneg
+   rw [hn_zero] at hn_gt
+   simp at hn_gt
+   norm_num at hn_gt
+```
+- **作用**：證明 \(n > 0\)
+- **方法**：反證法
+  1. 假設 \(n \leq 0\)
+  2. 但 \(n\) 是自然數，所以 \(n \geq 0\)
+  3. 因此 \(n = 0\)
+  4. 代入 `hn_gt` 得 \(1 < 0\)，矛盾
+- **技巧**：使用 `by_contra`、`push_neg`、`le_antisymm`、`norm_num`
+
+#### 2. 證明 \(\frac{1}{n} < b - a\)（第 1408-1417 行）
+
+```lean
+have h_inv : (1 : ℝ) / n < b - a := by
+   have hn_ne : (n : ℝ) ≠ 0 := ne_of_gt hn_pos
+   suffices 1 < n * (b - a) by
+      calc (1 : ℝ) / n
+         _ = 1 / n * 1 := by ring
+         _ < 1 / n * (n * (b - a)) := by
+            apply mul_lt_mul_of_pos_left this
+            exact div_pos one_pos hn_pos
+         _ = b - a := by field_simp
+   exact hn_gt
+```
+- **作用**：從 \(1 < n \cdot (b - a)\) 推導 \(\frac{1}{n} < b - a\)
+- **方法**：
+  1. 用 `suffices` 反向推理：只需證明 \(1 < n \cdot (b - a)\)
+  2. 計算鏈：
+     - \(\frac{1}{n} = \frac{1}{n} \cdot 1\)
+     - \(\frac{1}{n} \cdot 1 < \frac{1}{n} \cdot (n \cdot (b - a))\)（因為 \(1 < n \cdot (b - a)\) 且 \(\frac{1}{n} > 0\)）
+     - \(\frac{1}{n} \cdot n \cdot (b - a) = b - a\)（用 `field_simp` 約分）
+  3. 而 \(1 < n \cdot (b - a)\) 正是 `hn_gt`
+- **技巧**：`suffices`（反向推理）、`mul_lt_mul_of_pos_left`（正數乘不等式）、`field_simp`（域簡化）
+
+#### 3. 構造整數 \(m\)（第 1418-1428 行）
+
+```lean
+let m : ℤ := Int.floor (n * a) + 1
+```
+- **作用**：定義 \(m\) 為大於 \(n \cdot a\) 的最小整數
+- **公式**：\(m = \lfloor n \cdot a \rfloor + 1\)
+- **性質**：
+  - \(n \cdot a < m\)（因為 \(n \cdot a \leq \lfloor n \cdot a \rfloor < \lfloor n \cdot a \rfloor + 1\)）
+  - \(m \leq n \cdot a + 1\)（因為 \(\lfloor n \cdot a \rfloor \leq n \cdot a\)）
+
+```lean
+have hm_gt : (n : ℝ) * a < m := by
+   calc (n : ℝ) * a
+     _ < ↑⌊n * a⌋ + 1 := Int.lt_floor_add_one (n * a)
+     _ = ↑(⌊n * a⌋ + 1) := by norm_cast
+     _ = ↑(Int.floor (n * a) + 1) := rfl
+```
+- **作用**：證明 \(n \cdot a < m\)
+- **方法**：
+  1. 使用 `Int.lt_floor_add_one`：對任意實數 \(x\)，\(x < \lfloor x \rfloor + 1\)
+  2. 用 `norm_cast` 處理類型轉換：\(\uparrow(\lfloor n \cdot a \rfloor + 1)\)（整數加法）= \(\uparrow\lfloor n \cdot a \rfloor + 1\)（實數加法）
+  3. 用 `rfl` 確認這就是 \(m\) 的定義
+- **技巧**：`Int.lt_floor_add_one`、`norm_cast`（類型轉換標準化）
+
+```lean
+have hm_le : (m : ℝ) ≤ (n : ℝ) * a + 1 := by
+   calc (m : ℝ)
+     _ = ↑(Int.floor (n * a) + 1) := by rfl
+     _ = ↑⌊n * a⌋ + 1 := by norm_cast
+     _ ≤ (n * a) + 1 := by linarith [Int.floor_le (n * a)]
+```
+- **作用**：證明 \(m \leq n \cdot a + 1\)
+- **方法**：
+  1. 展開 \(m\) 的定義
+  2. 用 `norm_cast` 處理類型轉換
+  3. 使用 `Int.floor_le`：對任意實數 \(x\)，\(\lfloor x \rfloor \leq x\)
+  4. 用 `linarith` 完成線性不等式推理
+- **技巧**：`Int.floor_le`、`linarith`
+
+#### 4. 構造有理數並證明（第 1429-1446 行）
+
+```lean
+let q : ℚ := m / n
+have hq_real : (q : ℝ) = (m : ℝ) / (n : ℝ) := by
+   simp only [q, Rat.cast_div, Rat.cast_intCast, Rat.cast_natCast]
+```
+- **作用**：構造有理數 \(q = \frac{m}{n}\) 並證明其轉實數的性質
+- **技巧**：
+  - `let` 定義局部變量
+  - `simp only` 展開有理數到實數的轉換規則
+  - 處理 \(\mathbb{Z} \to \mathbb{Q} \to \mathbb{R}\) 和 \(\mathbb{N} \to \mathbb{Q} \to \mathbb{R}\) 的類型轉換
+
+```lean
+use q
+constructor
+```
+- **作用**：使用 \(q\) 作為存在性命題的見證，並開始證明合取 \(a < q \land q < b\)
+- **效果**：產生兩個子目標：
+  1. 證明 \(a < q\)
+  2. 證明 \(q < b\)
+
+**證明 \(a < q\)**（第 1435-1438 行）：
+```lean
+calc (a : ℝ)
+  _ = (n : ℝ) * a / n := by field_simp
+  _ < (m : ℝ) / n := by exact div_lt_div_of_pos_right hm_gt hn_pos
+  _ = (q : ℝ) := hq_real.symm
+```
+- **邏輯**：
+  1. \(a = \frac{n \cdot a}{n}\)（用 `field_simp` 自動處理）
+  2. \(\frac{n \cdot a}{n} < \frac{m}{n}\)（因為 \(n \cdot a < m\) 且 \(n > 0\)，用 `div_lt_div_of_pos_right`）
+  3. \(\frac{m}{n} = q\)（在實數域，用 `hq_real.symm`）
+- **技巧**：
+  - `field_simp`：自動處理域上的等式
+  - `div_lt_div_of_pos_right`：若 \(a < b\) 且 \(c > 0\)，則 \(\frac{a}{c} < \frac{b}{c}\)
+
+**證明 \(q < b\)**（第 1440-1446 行）：
+```lean
+calc (q : ℝ)
+  _ = (m : ℝ) / n := hq_real
+  _ ≤ ((n : ℝ) * a + 1) / n := by exact div_le_div_of_nonneg_right hm_le (le_of_lt hn_pos)
+  _ = (n : ℝ) * a / n + 1 / n := by ring
+  _ = a + 1 / n := by field_simp
+  _ < a + (b - a) := by linarith [h_inv]
+  _ = (b : ℝ) := by ring
+```
+- **邏輯**：
+  1. \(q = \frac{m}{n}\)（在實數域）
+  2. \(\frac{m}{n} \leq \frac{n \cdot a + 1}{n}\)（因為 \(m \leq n \cdot a + 1\) 且 \(n > 0\)）
+  3. \(\frac{n \cdot a + 1}{n} = \frac{n \cdot a}{n} + \frac{1}{n}\)（分配律）
+  4. \(\frac{n \cdot a}{n} + \frac{1}{n} = a + \frac{1}{n}\)（約分）
+  5. \(a + \frac{1}{n} < a + (b - a)\)（因為 \(\frac{1}{n} < b - a\)，即 `h_inv`）
+  6. \(a + (b - a) = b\)（代數）
+- **技巧**：
+  - `div_le_div_of_nonneg_right`：若 \(a \leq b\) 且 \(c \geq 0\)，則 \(\frac{a}{c} \leq \frac{b}{c}\)
+  - `ring`：多項式環上的等式自動化
+  - `linarith`：線性算術自動化
+  - `le_of_lt`：從 \(a < b\) 得到 \(a \leq b\)
+
+### 使用的定理和策略
+
+#### **Mathlib 定理**
+1. **`sub_pos`**：\(a < b \Leftrightarrow 0 < b - a\)
+2. **`Nat.cast_nonneg`**：自然數轉實數後非負
+3. **`le_antisymm`**：若 \(a \leq b\) 且 \(b \leq a\)，則 \(a = b\)
+4. **`ne_of_gt`**：若 \(a > b\)，則 \(a \neq b\)
+5. **`div_pos`**：若 \(a > 0\) 且 \(b > 0\)，則 \(\frac{a}{b} > 0\)
+6. **`mul_lt_mul_of_pos_left`**：若 \(a < b\) 且 \(c > 0\)，則 \(c \cdot a < c \cdot b\)
+7. **`div_lt_div_of_pos_right`**：若 \(a < b\) 且 \(c > 0\)，則 \(\frac{a}{c} < \frac{b}{c}\)
+8. **`div_le_div_of_nonneg_right`**：若 \(a \leq b\) 且 \(c \geq 0\)，則 \(\frac{a}{c} \leq \frac{b}{c}\)
+9. **`Int.floor_le`**：\(\lfloor x \rfloor \leq x\)
+10. **`Int.lt_floor_add_one`**：\(x < \lfloor x \rfloor + 1\)
+11. **`Rat.cast_div`**、**`Rat.cast_intCast`**、**`Rat.cast_natCast`**：有理數類型轉換
+
+#### **自定義定理**
+1. **`Theorem_1_16`**：阿基米德性質
+
+#### **證明策略（Tactics）**
+1. **`by_contra`**：反證法
+2. **`push_neg`**：否定推入
+3. **`suffices`**：反向推理
+4. **`calc`**：計算鏈（等式/不等式推導）
+5. **`obtain`**：解構存在性命題
+6. **`let`**：定義局部變量
+7. **`constructor`**：證明合取
+8. **`use`**：提供存在性見證
+9. **`ring`**：多項式環自動化
+10. **`field_simp`**：域簡化
+11. **`linarith`**：線性算術自動化
+12. **`norm_cast`**：類型轉換標準化
+13. **`simp`**：化簡
+14. **`norm_num`**：數值化簡
+15. **`exact`**：精確匹配
+16. **`apply`**：應用定理
+17. **`rfl`**：反射性（定義相等）
+18. **`rw`**：改寫
+
+### 關鍵技術點
+
+#### 1. **類型轉換處理**
+這個證明涉及多種數值類型的轉換：
+- \(\mathbb{N} \to \mathbb{R}\)：自然數到實數
+- \(\mathbb{Z} \to \mathbb{R}\)：整數到實數
+- \(\mathbb{Z} \to \mathbb{Q}\)：整數到有理數
+- \(\mathbb{Q} \to \mathbb{R}\)：有理數到實數
+
+使用的工具：
+- `norm_cast`：標準化類型轉換，處理 \(\uparrow(a + b)\) vs \(\uparrow a + \uparrow b\) 的問題
+- `simp only [Rat.cast_*]`：展開有理數轉換規則
+- `rfl`：當轉換是定義性相等時
+
+#### 2. **Floor 函數的使用**
+Floor 函數 \(\lfloor x \rfloor\) 的關鍵性質：
+- \(\lfloor x \rfloor \leq x < \lfloor x \rfloor + 1\)
+- \(\lfloor x \rfloor\) 是不超過 \(x\) 的最大整數
+
+在證明中的作用：
+- 構造 \(m = \lfloor n \cdot a \rfloor + 1\) 確保 \(m\) 是大於 \(n \cdot a\) 的**最小**整數
+- 這保證了 \(m \leq n \cdot a + 1\)，從而 \(\frac{m}{n} \leq a + \frac{1}{n}\)
+
+#### 3. **反向推理（Suffices）**
+在證明 \(\frac{1}{n} < b - a\) 時使用：
+```lean
+suffices 1 < n * (b - a) by
+   calc (1 : ℝ) / n
+      ...
+      _ = b - a := by field_simp
+```
+- **作用**：將目標 \(\frac{1}{n} < b - a\) 轉換為更簡單的 \(1 < n \cdot (b - a)\)
+- **優勢**：後者正是我們已有的 `hn_gt`，直接使用即可
+
+#### 4. **計算鏈（Calc）的有效使用**
+證明中大量使用 `calc` 來構建清晰的推理鏈：
+```lean
+calc (a : ℝ)
+  _ = (n : ℝ) * a / n := by field_simp
+  _ < (m : ℝ) / n := by exact div_lt_div_of_pos_right hm_gt hn_pos
+  _ = (q : ℝ) := hq_real.symm
+```
+- **優勢**：
+  - 每一步都清晰可見
+  - 容易檢查和除錯
+  - 符合數學證明的書寫習慣
+
+### 學習要點
+
+1. **有理數的構造性**
+   - 證明不僅說明有理數存在，還明確構造出 \(q = \frac{m}{n}\)
+   - \(m = \lfloor n \cdot a \rfloor + 1\)，\(n\) 來自阿基米德性質
+
+2. **阿基米德性質的應用**
+   - 阿基米德性質不僅用於處理「很大」的數
+   - 也可用於處理「很小」的數：\(\frac{1}{n}\) 可以任意小
+
+3. **Floor 函數的重要性**
+   - Floor 函數提供了從實數到整數的橋樑
+   - 在分析中經常用於構造性證明
+
+4. **類型系統的嚴謹性**
+   - Lean 的類型系統要求明確處理不同數系之間的轉換
+   - 雖然繁瑣，但保證了證明的正確性
+
+5. **多個定理的組合使用**
+   - 這個證明展示了如何將阿基米德性質、floor 函數性質、不等式運算等組合起來
+   - 體現了數學證明的模組化思維
+
+### 常見錯誤和陷阱
+
+1. **類型轉換錯誤**
+   - ❌ 直接使用 `(m : ℚ) / n`，忽略類型轉換問題
+   - ✅ 使用 `let q : ℚ := m / n` 然後證明 `(q : ℝ) = (m : ℝ) / (n : ℝ)`
+
+2. **忘記證明 \(n > 0\)**
+   - ❌ 假設阿基米德性質給出的 \(n\) 自動是正數
+   - ✅ 明確證明 \(n > 0\)（雖然從 \(1 < n \cdot (b - a)\) 可以看出，但需要形式化證明）
+
+3. **Floor 函數的不等式方向**
+   - ❌ \(n \cdot a \leq \lfloor n \cdot a \rfloor\)（錯誤！）
+   - ✅ \(\lfloor n \cdot a \rfloor \leq n \cdot a < \lfloor n \cdot a \rfloor + 1\)
+
+4. **忽略嚴格不等式和非嚴格不等式的區別**
+   - 在證明 \(q < b\) 時，關鍵使用了 \(\frac{1}{n} < b - a\)（嚴格不等式）
+   - 即使 \(m \leq n \cdot a + 1\)（非嚴格），最終仍能得到 \(q < b\)（嚴格）
+
+### 推廣和相關定理
+
+1. **無理數的稠密性**
+   - 定理：在任意兩個不相等的實數之間也存在無理數
+   - 證明策略：找一個有理數 \(q \in (a, b)\)，然後找一個無理數（如 \(q + \frac{\sqrt{2}}{n}\)）
+
+2. **代數數的稠密性**
+   - 代數數在實數中也是稠密的
+   - 但超越數雖然「更多」，卻也是稠密的
+
+3. **度量空間中的稠密性**
+   - 稠密性的概念推廣到一般度量空間
+   - 集合 \(A\) 在 \(X\) 中稠密 ⟺ \(\overline{A} = X\)
+
+4. **有理數逼近定理**
+   - Dirichlet 逼近定理：對任意無理數 \(\alpha\)，存在無窮多個有理數 \(\frac{p}{q}\) 使得 \(|\alpha - \frac{p}{q}| < \frac{1}{q^2}\)
+
+### 應用實例
+
+1. **數值計算**
+   - 計算機使用有理數（或浮點數）來逼近實數
+   - 稠密性保證了這種逼近的理論基礎
+
+2. **連續函數的延拓**
+   - 若 \(f : \mathbb{Q} \to \mathbb{R}\) 連續且一致連續，可唯一延拓到 \(f : \mathbb{R} \to \mathbb{R}\)
+
+3. **積分理論**
+   - Riemann 積分中，使用有理點來構造分割
+
+4. **實數的構造**
+   - Dedekind 分割和 Cauchy 序列兩種構造方式都依賴有理數的性質
+
+### 練習題
+
+1. **基礎練習**：證明若 \(a < b\)，則存在有理數 \(q_1, q_2\) 使得 \(a < q_1 < q_2 < b\)（提示：使用兩次定理 1.18）
+
+2. **進階練習**：證明若 \(a < b\)，則存在無理數 \(r\) 使得 \(a < r < b\)（提示：先找有理數 \(q \in (a, b)\)，再考慮 \(q + \frac{\sqrt{2}}{n}\)）
+
+3. **挑戰練習**：證明對任意 \(\varepsilon > 0\) 和實數 \(x\)，存在有理數 \(q\) 使得 \(|x - q| < \varepsilon\)
+
+4. **Lean 練習**：嘗試將證明改寫為使用 `Int.ceil` 而不是 `Int.floor`
+
+### 延伸閱讀
+
+1. **實數的完備性**
+   - 有理數的稠密性 vs 實數的完備性
+   - 有理數在實數中稠密，但有理數本身不完備
+
+2. **拓撲學觀點**
+   - 稠密子集的拓撲定義
+   - 可分空間：具有可數稠密子集的空間
+
+3. **測度論觀點**
+   - 雖然有理數稠密，但測度為 0
+   - 「大小」和「稠密性」的區別
+
+4. **構造主義數學**
+   - 這個證明是構造性的（給出了明確的 \(q\)）
+   - 在直覺主義邏輯中也成立
+
+---
+
+這個定理是實數理論的基石之一，與阿基米德性質一起，構成了理解實數系統的關鍵。掌握這個證明，不僅能提升形式化證明能力，也能加深對實數結構的理解。
+
+---
+
+## 定義 1.19：下界、下確界與有界（Lower Bound, Infimum, and Bounded）
+
+### 定義陳述
+
+設 \(E \subset \mathbb{R}\) 為非空集合。
+
+#### **i) 下界與有下界（Lower Bound and Bounded Below）**
+
+集合 \(E\) 稱為**有下界**（bounded below），若且唯若存在 \(m \in \mathbb{R}\) 使得對所有 \(a \in E\)，有 \(a \geq m\)。此時稱 \(m\) 為集合 \(E\) 的一個**下界**（lower bound）。
+
+**數學表述**：
+\[
+\text{is\_lower\_bound}(m, E) :\Leftrightarrow \forall a \in E, m \leq a
+\]
+\[
+\text{bounded\_below}(E) :\Leftrightarrow \exists m \in \mathbb{R}, \text{is\_lower\_bound}(m, E)
+\]
+
+#### **ii) 下確界（Infimum / Greatest Lower Bound）**
+
+數 \(t\) 稱為集合 \(E\) 的**下確界**（infimum），若且唯若：
+1. \(t\) 是 \(E\) 的下界
+2. 對所有 \(E\) 的下界 \(m\)，有 \(t > m\)
+
+此時我們說 \(E\) **有下確界** \(t\)，記作 \(t = \inf E\)。
+
+**數學表述**：
+\[
+\text{is\_infimum}(t, E) :\Leftrightarrow \text{is\_lower\_bound}(t, E) \land \forall m \in \mathbb{R}, (\text{is\_lower\_bound}(m, E) \Rightarrow m \leq t)
+\]
+
+**說明**：下確界是**最大的下界**，與上確界（最小的上界）對偶。
+
+#### **iii) 有界（Bounded）**
+
+集合 \(E\) 稱為**有界**（bounded），若且唯若 \(E\) 既有上界又有下界。
+
+**數學表述**：
+\[
+\text{bounded}(E) :\Leftrightarrow \text{bounded\_above}(E) \land \text{bounded\_below}(E)
+\]
+
+### Lean 4 形式化定義
+
+```lean
+-- Definition 1.19 : Bounded below, infimum, and bounded
+-- 定義 1.19：下界、下確界和有界
+
+-- i) Lower bound and bounded below
+-- 下界：若 m ≤ a 對所有 a ∈ E 成立，則 m 是 E 的下界
+def is_lower_bound (m : ℝ) (E : Set ℝ) : Prop :=
+  ∀ a ∈ E, m ≤ a
+
+-- 有下界：存在下界
+def bounded_below (E : Set ℝ) : Prop :=
+  ∃ m : ℝ, is_lower_bound m E
+
+-- ii) Infimum (greatest lower bound)
+-- 下確界：t 是下界，且 t 大於所有其他下界
+def is_infimum (t : ℝ) (E : Set ℝ) : Prop :=
+  is_lower_bound t E ∧ ∀ m : ℝ, is_lower_bound m E → m ≤ t
+
+-- iii) Bounded (both above and below)
+-- 有界：既有上界又有下界
+def bounded (E : Set ℝ) : Prop :=
+  bounded_above E ∧ bounded_below E
+```
+
+### 概念解析
+
+#### 1. **上界與下界的對偶性**
+
+定義 1.19 與定義 1.13（上界、上確界）形成完美的對偶關係：
+
+| 概念 | 上界版本 | 下界版本 |
+|------|----------|----------|
+| **界** | \(M\) 是上界 ⟺ \(\forall a \in E, a \leq M\) | \(m\) 是下界 ⟺ \(\forall a \in E, m \leq a\) |
+| **有界** | \(E\) 有上界 ⟺ \(\exists M, \forall a \in E, a \leq M\) | \(E\) 有下界 ⟺ \(\exists m, \forall a \in E, m \leq a\) |
+| **確界** | \(s = \sup E\) ⟺ 最小的上界 | \(t = \inf E\) ⟺ 最大的下界 |
+| **特徵** | \(s \leq M\) 對所有上界 \(M\) | \(m \leq t\) 對所有下界 \(m\) |
+
+**視覺化**：
+```
+        上界們
+    ──────────────
+    M₃  M₂  M₁  s = sup E  ← 最小的上界（上確界）
+    ──────────────
+         E
+    ──────────────
+    t = inf E  m₁  m₂  m₃  ← 最大的下界（下確界）
+    ──────────────
+        下界們
+```
+
+#### 2. **下確界的等價刻畫**
+
+下確界 \(t = \inf E\) 等價於以下兩個條件：
+
+**條件 1**（下界性）：
+\[
+\forall a \in E, t \leq a
+\]
+
+**條件 2**（最大性）：
+\[
+\forall \varepsilon > 0, \exists a \in E, a < t + \varepsilon
+\]
+
+**解釋**：
+- 條件 1 說明 \(t\) 是下界
+- 條件 2 說明沒有比 \(t\) 更大的下界（對偶於上確界的逼近性質）
+
+#### 3. **有界集合的性質**
+
+若 \(E\) 有界，則：
+1. **存在包含區間**：存在 \(m, M \in \mathbb{R}\) 使得 \(E \subseteq [m, M]\)
+2. **直徑有限**：\(\text{diam}(E) = \sup\{|x - y| : x, y \in E\} < \infty\)
+3. **有界序列**：若 \(\{x_n\}\) 是 \(E\) 中的序列，則 \(\{x_n\}\) 有界
+
+### 實例與反例
+
+#### **實例 1：開區間 \((0, 1)\)**
+- **上界**：任何 \(M \geq 1\)，例如 \(1, 2, 100\)
+- **上確界**：\(\sup(0, 1) = 1\)（最小的上界）
+- **下界**：任何 \(m \leq 0\)，例如 \(0, -1, -100\)
+- **下確界**：\(\inf(0, 1) = 0\)（最大的下界）
+- **有界**：是，因為 \((0, 1) \subseteq [0, 1]\)
+- **注意**：上確界和下確界都**不在**集合內
+
+#### **實例 2：閉區間 \([0, 1]\)**
+- **上確界**：\(\sup[0, 1] = 1 \in [0, 1]\)
+- **下確界**：\(\inf[0, 1] = 0 \in [0, 1]\)
+- **有界**：是
+- **注意**：上確界和下確界都**在**集合內（稱為最大元和最小元）
+
+#### **實例 3：自然數集 \(\mathbb{N} = \{1, 2, 3, \ldots\}\)**
+- **上界**：無（無上界）
+- **上確界**：不存在
+- **下界**：任何 \(m \leq 1\)
+- **下確界**：\(\inf \mathbb{N} = 1 \in \mathbb{N}\)
+- **有界**：否（只有下界，沒有上界）
+
+#### **實例 4：倒數序列 \(\{\frac{1}{n} : n \in \mathbb{N}\}\)**
+- **上界**：任何 \(M \geq 1\)
+- **上確界**：\(\sup = 1\)
+- **下界**：任何 \(m \leq 0\)
+- **下確界**：\(\inf = 0\)（不在集合內）
+- **有界**：是
+
+#### **反例 1：無下界集合 \(\mathbb{Z}\)**（所有整數）
+- 既無上界也無下界
+- 不是有界集合
+
+#### **反例 2：\(E = \{-n : n \in \mathbb{N}\}\)**（負整數）
+- **上界**：任何 \(M \geq -1\)
+- **上確界**：\(\sup E = -1\)
+- **下界**：無
+- **有界**：否
+
+### 重要定理
+
+#### **定理（實數完備性的下確界版本）**
+
+若非空集合 \(E \subset \mathbb{R}\) 有下界，則 \(E\) 有下確界。
+
+**證明思路**：
+1. 設 \(F = \{-a : a \in E\}\)（\(E\) 中所有元素取負號）
+2. \(E\) 有下界 \(m\) ⟺ \(F\) 有上界 \(-m\)
+3. 由完備性公設，\(F\) 有上確界 \(s = \sup F\)
+4. 證明 \(t = -s\) 是 \(E\) 的下確界
+
+**結論**：完備性公設的上確界版本和下確界版本是等價的。
+
+### 在 Lean 中的應用
+
+#### **定理：區間有界**
+
+```lean
+-- 閉區間 [a, b] 有界
+theorem interval_bounded (a b : ℝ) (hab : a ≤ b) : 
+  bounded (Set.Icc a b) := by
+  constructor
+  -- 證明有上界
+  · use b
+    intro x hx
+    exact hx.2
+  -- 證明有下界
+  · use a
+    intro x hx
+    exact hx.1
+```
+
+#### **定理：有界集合的性質**
+
+```lean
+-- 若 E 有界，則存在 M > 0 使得 |x| ≤ M 對所有 x ∈ E
+theorem bounded_implies_abs_bounded (E : Set ℝ) (hE : bounded E) :
+  ∃ M > 0, ∀ x ∈ E, |x| ≤ M := by
+  obtain ⟨⟨M, hM⟩, ⟨m, hm⟩⟩ := hE
+  use max (|M|) (|m|) + 1
+  constructor
+  · linarith [abs_nonneg M, abs_nonneg m]
+  · intro x hx
+    have hxM := hM x hx
+    have hxm := hm x hx
+    sorry  -- 需要證明 |x| ≤ max(|M|, |m|)
+```
+
+### 與其他概念的關係
+
+#### 1. **最大元與最小元**
+
+- **最大元**（maximum）：若 \(M \in E\) 且 \(M\) 是 \(E\) 的上界，則 \(M = \max E\)
+- **最小元**（minimum）：若 \(m \in E\) 且 \(m\) 是 \(E\) 的下界，則 \(m = \min E\)
+
+**關係**：
+- 若 \(\max E\) 存在，則 \(\sup E = \max E\)
+- 若 \(\min E\) 存在，則 \(\inf E = \min E\)
+- 但 \(\sup E\) 或 \(\inf E\) 可能存在而 \(\max E\) 或 \(\min E\) 不存在（例如開區間）
+
+#### 2. **有界函數**
+
+函數 \(f : X \to \mathbb{R}\) 稱為**有界**，若其值域 \(f(X)\) 有界：
+\[
+\exists M > 0, \forall x \in X, |f(x)| \leq M
+\]
+
+#### 3. **有界序列**
+
+序列 \(\{a_n\}\) 稱為**有界**，若集合 \(\{a_n : n \in \mathbb{N}\}\) 有界：
+\[
+\exists M > 0, \forall n \in \mathbb{N}, |a_n| \leq M
+\]
+
+### 常見錯誤與澄清
+
+#### **錯誤 1：混淆確界與極值**
+
+❌ **錯誤**：\(\sup E\) 一定在 \(E\) 中
+✅ **正確**：\(\sup E\) 可能不在 \(E\) 中（例如 \(\sup(0, 1) = 1 \notin (0, 1)\)）
+
+#### **錯誤 2：誤解「最大」的含義**
+
+❌ **錯誤**：下確界是最小的下界
+✅ **正確**：下確界是**最大**的下界（所有下界中最大的那個）
+
+**記憶方法**：
+- \(\sup\)（上確界）= 最**小**的上界 = 從上方逼近
+- \(\inf\)（下確界）= 最**大**的下界 = 從下方逼近
+
+#### **錯誤 3：忽略非空條件**
+
+❌ **錯誤**：空集有上確界和下確界
+✅ **正確**：定義 1.19 明確要求 \(E\) 非空
+
+**為什麼**：
+- 空集的任何實數都是上界（空真命題）
+- 沒有「最小的上界」的良定義概念
+
+#### **錯誤 4：誤解有界的必要條件**
+
+❌ **錯誤**：若 \(E \subseteq [a, b]\)，則 \(\sup E = b\) 且 \(\inf E = a\)
+✅ **正確**：只能說 \(\sup E \leq b\) 且 \(\inf E \geq a\)
+
+**反例**：\(E = \{\frac{1}{2}\} \subseteq [0, 1]\)，但 \(\sup E = \inf E = \frac{1}{2}\)
+
+### 練習題
+
+#### **基礎練習**
+
+1. **求確界**：求以下集合的上確界和下確界（若存在）：
+   - \(E_1 = \{1 - \frac{1}{n} : n \in \mathbb{N}\}\)
+   - \(E_2 = \{(-1)^n + \frac{1}{n} : n \in \mathbb{N}\}\)
+   - \(E_3 = \{x \in \mathbb{Q} : x^2 < 2\}\)
+
+2. **判斷有界性**：判斷以下集合是否有界：
+   - \(\{\sin(n) : n \in \mathbb{N}\}\)
+   - \(\{n \sin(\frac{1}{n}) : n \in \mathbb{N}\}\)
+   - \(\{\frac{n}{n+1} : n \in \mathbb{N}\}\)
+
+#### **進階練習**
+
+3. **證明**：若 \(E\) 非空且有下界，證明 \(\inf E = -\sup\{-x : x \in E\}\)
+
+4. **證明**：若 \(A, B\) 有界，證明 \(A \cup B\) 有界，且
+   \[
+   \sup(A \cup B) = \max(\sup A, \sup B)
+   \]
+   \[
+   \inf(A \cup B) = \min(\inf A, \inf B)
+   \]
+
+#### **挑戰練習**
+
+5. **Lean 練習**：在 Lean 中證明上面的定理 3 和 4
+
+6. **構造性證明**：給定 \(\varepsilon > 0\) 和有界集合 \(E\)，構造性地找到 \(a \in E\) 使得 \(a < \inf E + \varepsilon\)
+
+### 延伸閱讀
+
+1. **Dedekind 分割**
+   - 使用上界和下界的概念來構造實數系統
+   - 每個實數對應一個有理數的 Dedekind 分割
+
+2. **極限上下確界**
+   - \(\limsup a_n\) 和 \(\liminf a_n\) 的定義
+   - 在極限理論中的應用
+
+3. **拓撲學觀點**
+   - 有界集合的拓撲性質
+   - 緊緻性與有界性的關係（Heine-Borel 定理）
+
+4. **測度論**
+   - 外測度的定義使用下確界
+   - 內測度的定義使用上確界
+
+---
+
+這些定義是實分析的基礎，為後續的極限、連續性、緊緻性等概念打下堅實基礎。理解上確界和下確界的對偶關係，有助於深入理解實數的完備性結構。
+
+---
+
+## 定理 1.20(1)：上確界與下確界的對偶性
+
+### 定理陳述
+
+**定理 1.20(1)**：設 \(E \subset \mathbb{R}\) 為集合。則：
+
+**(a) 等價性**：\(E\) 有上確界 當且僅當 \(-E\) 有下確界
+
+**(b) 關係式**：若 \(s = \sup E\)，\(t = \inf(-E)\)，則 \(t = -s\)
+
+**符號說明**：
+\[
+-E := \{-x : x \in E\} = \text{neg\_set}(E)
+\]
+
+**數學表述**：
+\[
+(\exists s, \text{is\_supremum}(s, E)) \Leftrightarrow (\exists t, \text{is\_infimum}(t, -E))
+\]
+\[
+\forall s, t, \quad \text{is\_supremum}(s, E) \land \text{is\_infimum}(t, -E) \Rightarrow t = -s
+\]
+
+### 核心思想
+
+這個定理揭示了**上確界與下確界之間的深刻對偶關係**：
+
+**直觀理解**：
+- 若 \(s\) 是 \(E\) 中所有元素的「天花板」（最小的上界）
+- 則 \(-s\) 是 \(-E\) 中所有元素的「地板」（最大的下界）
+
+**視覺化**：
+
+```
+     E:    [  x₁  x₂  x₃  ]  ≤ s (上確界)
+                ↓   ↓   ↓
+    -E:  [ -x₃ -x₂ -x₁  ]  ≥ -s (下確界)
+```
+
+**為什麼這個定理重要？**
+1. **理論意義**：完備性公設的上確界版本和下確界版本等價
+2. **實用價值**：可以將下確界問題轉化為上確界問題（或反之）
+3. **對稱性**：體現了實數系統的內在對稱性
+
+### Lean 4 完整證明（帶詳細註解）
+
+```lean
+-- 定義取負的集合：-E = {-x : x ∈ E}
+def neg_set (E : Set ℝ) : Set ℝ := {x | -x ∈ E}  -- 注意：x ∈ neg_set E ⟺ -x ∈ E
+
+-- 定理 1.20(1) 包含兩個部分：
+-- (a) E 有上確界 ⟺ -E 有下確界（等價性）
+-- (b) 若成立，則 inf(-E) = -sup(E)（關係式）
+theorem Theorem_1_20_1 (E : Set ℝ):
+   ((∃ s, is_supremum s E) ↔ (∃ t, is_infimum t (neg_set E))) ∧  -- 第一部分：等價性
+   (∀ s t, is_supremum s E → is_infimum t (neg_set E) → t = -s) := by  -- 第二部分：關係式
+   constructor  -- 分解合取（∧）：需要證明兩個部分
+   {
+      -- 【第一部分】證明等價性：(∃ s, is_supremum s E) ↔ (∃ t, is_infimum t (neg_set E))
+      constructor  -- 分解雙向蘊涵（↔）：需要證明 (⇒) 和 (⇐)
+      {
+         -- 【⇒ 方向】若 E 有上確界 s，則 -E 有下確界 -s
+         intro h  -- 假設：h : ∃ s, is_supremum s E
+         obtain ⟨s, hs⟩ := h  -- 解構存在性：取出上確界 s 和證據 hs : is_supremum s E
+         use -s  -- 聲稱：-s 是 neg_set E 的下確界（需要證明 is_infimum (-s) (neg_set E)）
+         constructor  -- 分解 is_infimum 的定義：(1) -s 是下界 ∧ (2) -s 是最大的下界
+         {
+            -- 【證明 -s 是下界】即證明：∀ x ∈ neg_set E, -s ≤ x
+            intro x hx  -- 任取 x ∈ neg_set E（即 -x ∈ E）
+            have h1 : -x ≤ s := hs.1 (-x) hx  -- 因為 s 是 E 的上界，所以 -x ≤ s
+            linarith  -- 線性算術推理：從 -x ≤ s 得到 -s ≤ x
+         }
+         {
+            -- 【證明 -s 是最大的下界】即證明：∀ m, is_lower_bound m (neg_set E) → m ≤ -s
+            intro m hm  -- 任取下界 m（hm : 對所有 x ∈ neg_set E，m ≤ x）
+            have h1 : s ≤ -m := by  -- 先證明 s ≤ -m，然後得到 m ≤ -s
+               apply hs.2  -- 用上確界的性質：若 -m 是 E 的上界，則 s ≤ -m
+               intro a ha  -- 證明 -m 是 E 的上界：任取 a ∈ E，證明 a ≤ -m
+               have h2 : m ≤ -a := hm (-a) (by simp [neg_set]; exact ha)  -- 因為 -a ∈ neg_set E 且 m 是下界，所以 m ≤ -a
+               linarith  -- 從 m ≤ -a 得到 a ≤ -m
+            linarith  -- 從 s ≤ -m 得到 m ≤ -s
+         }
+      }
+      {
+         -- 【⇐ 方向】若 -E 有下確界 t，則 E 有上確界 -t
+         intro h  -- 假設：h : ∃ t, is_infimum t (neg_set E)
+         obtain ⟨t, ht⟩ := h  -- 解構存在性：取出下確界 t 和證據 ht : is_infimum t (neg_set E)
+         use -t  -- 聲稱：-t 是 E 的上確界（需要證明 is_supremum (-t) E）
+         constructor  -- 分解 is_supremum 的定義：(1) -t 是上界 ∧ (2) -t 是最小的上界
+         {
+            -- 【證明 -t 是上界】即證明：∀ x ∈ E, x ≤ -t
+            intro x hx  -- 任取 x ∈ E
+            have h1 : -x ∈ neg_set E := by  -- 先證明 -x ∈ neg_set E
+               simp [neg_set]  -- 展開 neg_set 的定義：-x ∈ neg_set E ⟺ -(-x) ∈ E ⟺ x ∈ E
+               exact hx  -- 而 hx : x ∈ E
+            have h2 : t ≤ -x := ht.1 (-x) h1  -- 因為 t 是 neg_set E 的下界，所以 t ≤ -x
+            linarith  -- 從 t ≤ -x 得到 x ≤ -t
+         }
+         {
+            -- 【證明 -t 是最小的上界】即證明：∀ M, is_upper_bound M E → -t ≤ M
+            intro m hm  -- 任取上界 m（hm : 對所有 x ∈ E，x ≤ m）
+            have h1 : -m ≤ t := by  -- 先證明 -m ≤ t，然後得到 -t ≤ m
+               apply ht.2  -- 用下確界的性質：若 -m 是 neg_set E 的下界，則 -m ≤ t
+               intro x hx  -- 證明 -m 是 neg_set E 的下界：任取 x ∈ neg_set E，證明 -m ≤ x
+               -- hx : x ∈ neg_set E，根據定義就是 -x ∈ E
+               have h2 : -x ≤ m := hm (-x) hx  -- 因為 -x ∈ E 且 m 是上界，所以 -x ≤ m
+               linarith  -- 從 -x ≤ m 得到 -m ≤ x
+            linarith  -- 從 -m ≤ t 得到 -t ≤ m
+         }
+      }
+   }
+   {
+      -- 【第二部分】證明關係式：若 s 是 E 的上確界，t 是 -E 的下確界，則 t = -s
+      intro s t hs ht  -- 引入 s, t 和假設 hs : is_supremum s E, ht : is_infimum t (neg_set E)
+      -- 策略：用雙向不等式 t ≤ -s 且 -s ≤ t，然後用 le_antisymm 得到 t = -s
+      have h1 : t ≤ -s := by  -- 證明 t ≤ -s
+         have h2 : s ≤ -t := by  -- 先證明 s ≤ -t（等價於 t ≤ -s）
+            apply hs.2  -- 用上確界的性質：若 -t 是 E 的上界，則 s ≤ -t
+            intro a ha  -- 證明 -t 是 E 的上界：任取 a ∈ E，證明 a ≤ -t
+            have h3 : t ≤ -a := ht.1 (-a) (by simp [neg_set]; exact ha)  -- 因為 -a ∈ neg_set E 且 t 是下界，所以 t ≤ -a
+            linarith  -- 從 t ≤ -a 得到 a ≤ -t
+         linarith  -- 從 s ≤ -t 得到 t ≤ -s
+      have h2 : -s ≤ t := by  -- 證明 -s ≤ t
+         apply ht.2  -- 用下確界的性質：若 -s 是 neg_set E 的下界，則 -s ≤ t
+         intro a ha  -- 證明 -s 是 neg_set E 的下界：任取 a ∈ neg_set E，證明 -s ≤ a
+         -- ha : a ∈ neg_set E，根據定義就是 -a ∈ E
+         have h3 : -a ≤ s := hs.1 (-a) ha  -- 因為 -a ∈ E 且 s 是上界，所以 -a ≤ s
+         linarith  -- 從 -a ≤ s 得到 -s ≤ a
+      exact le_antisymm h1 h2  -- 由 t ≤ -s 且 -s ≤ t，得到 t = -s（反對稱性）
+   }
+```
+
+### 證明結構解析
+
+這個證明有**三層結構**：
+
+#### **第一層：合取分解**（`constructor`）
+
+```lean
+((∃ s, is_supremum s E) ↔ (∃ t, is_infimum t (neg_set E))) ∧ (...)
+           └──────────────── 第一部分 ────────────────┘   └─ 第二部分 ─┘
+```
+
+用 `constructor` 分解為兩個子目標：
+1. 證明等價性
+2. 證明關係式
+
+#### **第二層：等價性分解**（第一個 `constructor`）
+
+```lean
+(∃ s, is_supremum s E) ↔ (∃ t, is_infimum t (neg_set E))
+      └─── (⇒) ───┘    ↔    └─── (⇐) ───┘
+```
+
+用 `constructor` 分解雙向蘊涵為兩個方向：
+- **(⇒)**：若 \(E\) 有上確界，則 \(-E\) 有下確界
+- **(⇐)**：若 \(-E\) 有下確界，則 \(E\) 有上確界
+
+#### **第三層：確界性質分解**（內層 `constructor`）
+
+對每個方向，證明確界有兩個性質：
+1. 是界（上界或下界）
+2. 是最優的界（最小或最大）
+
+### 關鍵技巧詳解
+
+#### **技巧 1：`neg_set` 的定義與展開**
+
+```lean
+def neg_set (E : Set ℝ) : Set ℝ := {x | -x ∈ E}
+```
+
+**重要性質**：
+- \(x \in \text{neg\_set}(E) \Leftrightarrow -x \in E\)
+- \(-a \in \text{neg\_set}(E) \Leftrightarrow a \in E\)（特別重要！）
+
+**在證明中的使用**：
+- 當 `hx : x ∈ neg_set E` 時，直接使用 `hx` 就是 `-x ∈ E`
+- 需要證明 `-a ∈ neg_set E` 時，用 `by simp [neg_set]; exact ha`（其中 `ha : a ∈ E`）
+
+#### **技巧 2：不等式方向轉換**
+
+**核心變換**：
+\[
+t \leq -s \Leftrightarrow s \leq -t
+\]
+
+**在證明中**：
+```lean
+have h1 : t ≤ -s := by
+   have h2 : s ≤ -t := by
+      -- 證明 s ≤ -t
+      ...
+   linarith  -- 從 s ≤ -t 推出 t ≤ -s
+```
+
+**為什麼這樣做？**
+- 目標 `t ≤ -s` 不容易直接證明
+- 但 `s ≤ -t` 可以用 `hs.2`（上確界的最小性）
+- `linarith` 自動處理線性不等式的轉換
+
+#### **技巧 3：確界的特徵性質**
+
+**上確界的使用**（`hs : is_supremum s E`）：
+- `hs.1`：\(s\) 是上界 → 對所有 \(a \in E\)，\(a \leq s\)
+- `hs.2`：\(s\) 是最小上界 → 對所有上界 \(M\)，\(s \leq M\)
+
+**下確界的使用**（`ht : is_infimum t (neg_set E)`）：
+- `ht.1`：\(t\) 是下界 → 對所有 \(x \in \text{neg\_set}(E)\)，\(t \leq x\)
+- `ht.2`：\(t\) 是最大下界 → 對所有下界 \(m\)，\(m \leq t\)
+
+#### **技巧 4：間接證明策略**
+
+**證明 \(m \leq -s\)**：
+1. 不直接證明，而是證明 \(s \leq -m\)
+2. 用 `hs.2`：只需證明 \(-m\) 是 \(E\) 的上界
+3. 從 \(m\) 是 \(-E\) 的下界推導 \(-m\) 是 \(E\) 的上界
+
+**邏輯鏈**：
+```
+m 是 -E 的下界
+    ⇒ ∀ x ∈ -E, m ≤ x
+    ⇒ ∀ a ∈ E, m ≤ -a  （取 x = -a）
+    ⇒ ∀ a ∈ E, a ≤ -m
+    ⇒ -m 是 E 的上界
+    ⇒ s ≤ -m  （s 是最小上界）
+    ⇒ m ≤ -s
+```
+
+#### **技巧 5：雙向不等式證明相等**
+
+```lean
+have h1 : t ≤ -s := ...
+have h2 : -s ≤ t := ...
+exact le_antisymm h1 h2  -- 得到 t = -s
+```
+
+**`le_antisymm` 定理**：
+\[
+a \leq b \land b \leq a \Rightarrow a = b
+\]
+
+這是實數（偏序集）的反對稱性。
+
+### 使用的定理和策略
+
+#### **Lean 策略（Tactics）**
+
+1. **`constructor`**：分解合取（\(\land\)）或雙向蘊涵（\(\Leftrightarrow\)）
+2. **`intro`**：引入假設或全稱量詞
+3. **`obtain ⟨x, hx⟩ := h`**：解構存在性命題
+4. **`use`**：提供存在性見證
+5. **`apply`**：應用定理或假設
+6. **`have`**：引入中間結果
+7. **`linarith`**：線性算術自動化
+8. **`simp`**：化簡（展開定義）
+9. **`exact`**：精確匹配目標
+10. **`le_antisymm`**：由 \(a \leq b\) 和 \(b \leq a\) 得 \(a = b\)
+
+#### **關鍵定理**
+
+1. **`is_supremum` 的定義**：
+   ```lean
+   is_supremum s E := is_upper_bound s E ∧ (∀ M, is_upper_bound M E → s ≤ M)
+   ```
+
+2. **`is_infimum` 的定義**：
+   ```lean
+   is_infimum t E := is_lower_bound t E ∧ (∀ m, is_lower_bound m E → m ≤ t)
+   ```
+
+3. **`neg_set` 的定義**：
+   ```lean
+   def neg_set (E : Set ℝ) := {x | -x ∈ E}
+   ```
+
+### 證明流程圖
+
+```
+定理 1.20(1)
+    │
+    ├─ 第一部分：等價性
+    │   │
+    │   ├─ (⇒) 若 E 有上確界 s
+    │   │   │
+    │   │   ├─ 聲稱 -s 是 -E 的下確界
+    │   │   │   │
+    │   │   │   ├─ 證明 -s 是下界
+    │   │   │   │   └─ ∀ x ∈ -E, -s ≤ x
+    │   │   │   │       └─ 從 -x ≤ s 推出（因為 s 是上界）
+    │   │   │   │
+    │   │   │   └─ 證明 -s 是最大下界
+    │   │   │       └─ ∀ m (下界), m ≤ -s
+    │   │   │           └─ 證明 -m 是 E 的上界 → s ≤ -m → m ≤ -s
+    │   │   │
+    │   │   └─ 完成
+    │   │
+    │   └─ (⇐) 若 -E 有下確界 t
+    │       │
+    │       └─ 聲稱 -t 是 E 的上確界（對稱證明）
+    │
+    └─ 第二部分：關係式 t = -s
+        │
+        ├─ 證明 t ≤ -s
+        │   └─ 證明 s ≤ -t
+        │       └─ 證明 -t 是 E 的上界
+        │
+        ├─ 證明 -s ≤ t
+        │   └─ 證明 -s 是 -E 的下界
+        │
+        └─ 用 le_antisymm 得 t = -s
+```
+
+### 常見錯誤與陷阱
+
+#### **錯誤 1：混淆 `neg_set` 的定義**
+
+❌ **錯誤**：以為 `neg_set E = {-x : x ∈ E}`  
+✅ **正確**：`neg_set E = {x : -x ∈ E}`
+
+**區別**：
+- `neg_set E` 中的元素是 \(x\)，滿足 \(-x \in E\)
+- 如果 \(a \in E\)，則 \(-a \in \text{neg\_set}(E)\)
+
+#### **錯誤 2：不等式方向搞錯**
+
+❌ **錯誤**：用 `ht.2` 直接證明 `t ≤ -s`  
+✅ **正確**：先證 `s ≤ -t`，然後推出 `t ≤ -s`
+
+**原因**：`ht.2` 的結論是 `m ≤ t`，不是 `t ≤ m`
+
+#### **錯誤 3：忘記 `simp [neg_set]` 或誤用**
+
+在某些情況下：
+- ✅ 直接用 `hx`（當 `hx : x ∈ neg_set E` 時，直接就是 `-x ∈ E`）
+- ❌ 過度使用 `simp`（有時會 "made no progress"）
+
+**經驗法則**：
+- 如果 `hx : x ∈ neg_set E`，直接用，無需 `simp`
+- 如果要證明 `x ∈ neg_set E`，可能需要 `simp [neg_set]`
+
+#### **錯誤 4：忽略中間步驟**
+
+❌ **錯誤**：直接從 `hm : is_lower_bound m (neg_set E)` 推出 `m ≤ -s`  
+✅ **正確**：先證 `s ≤ -m`，再推 `m ≤ -s`
+
+### 推廣與應用
+
+#### **1. 推廣到一般偏序集**
+
+定理 1.20 可以推廣到任何偏序集 \((P, \leq)\)，只要定義適當的「取負」運算。
+
+#### **2. 實數完備性的等價形式**
+
+**定理**：以下陳述等價：
+1. 完備性公設（上確界版本）：非空有上界集合有上確界
+2. 完備性公設（下確界版本）：非空有下界集合有下確界
+
+**證明**：直接應用定理 1.20。
+
+#### **3. 在極限理論中的應用**
+
+**極限上確界與極限下確界**：
+\[
+\limsup_{n \to \infty} a_n = \inf_{n \geq 1} \sup_{k \geq n} a_k
+\]
+\[
+\liminf_{n \to \infty} a_n = \sup_{n \geq 1} \inf_{k \geq n} a_k
+\]
+
+定理 1.20 的對偶性在這裡扮演重要角色。
+
+#### **4. 在優化理論中的應用**
+
+**對偶問題**：
+- 原問題：\(\min f(x)\)
+- 對偶問題：\(\max g(y)\)
+
+上下確界的對偶性是對偶理論的基礎。
+
+### 練習題
+
+#### **基礎練習**
+
+1. **證明**：若 \(E\) 有界，則 \(-E\) 有界。
+
+2. **計算**：設 \(E = (0, 1)\)，求 \(\sup E\)、\(\inf E\)、\(\sup(-E)\)、\(\inf(-E)\)，並驗證 \(\inf(-E) = -\sup E\)。
+
+#### **進階練習**
+
+3. **證明**：若 \(E_1, E_2\) 非空有界，則
+   \[
+   \sup(E_1 + E_2) = \sup E_1 + \sup E_2
+   \]
+   其中 \(E_1 + E_2 = \{x + y : x \in E_1, y \in E_2\}\)
+
+4. **證明**：若 \(E\) 非空有界，則
+   \[
+   \sup E - \inf E = \inf\{|x - y| : x, y \in E\}
+   \]
+   是否成立？（提示：不成立，右邊是 0）
+
+#### **挑戰練習**
+
+5. **Lean 練習**：證明若 \(E\) 非空有界，則存在 \(a, b \in \mathbb{R}\) 使得 \(E \subseteq [a, b]\)。
+
+6. **推廣**：定理 1.20 能否推廣到 \(\mathbb{R}^n\)？考慮適當的偏序。
+
+### 延伸閱讀
+
+1. **Dedekind 分割與實數構造**
+   - 如何用上下確界來定義實數
+   - Dedekind 分割的對偶性
+
+2. **凸分析**
+   - 凸函數的共軛
+   - Fenchel-Legendre 變換
+
+3. **泛函分析**
+   - Hahn-Banach 定理
+   - 對偶空間理論
+
+4. **優化理論**
+   - Lagrange 對偶
+   - Minimax 定理
+
+---
+
+這個定理展示了實數系統的深刻對稱性，是理解完備性和確界概念的關鍵。掌握這個證明，不僅能提升形式化證明能力，更能深入理解上下確界的本質。
+
+---
+
 ## 後續練習題
 
 （此處將添加更多第一章的練習題）

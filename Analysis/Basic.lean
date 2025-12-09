@@ -1391,4 +1391,167 @@ theorem Theorem_1_16 (a b : ℝ) (ha : a > 0) :  -- 定理 1.16（阿基米德�
      exact False.elim (lt_irrefl s h_s_lt_s)  -- 矛盾消去：由 s < s（不可能）證明任何結論
    · push_neg at h_case2  -- 否則，¬((k+1)a ≤ b) 即 b < (k+1)a
      exact h_case2  -- 這正是我們要證明的目標 b < (k+1)a
+
+-- Theorem 1.18 : If a, b ∈ ℝ satisfy a < b, then there is a q ∈ ℚ ∋ a < q < b.
+theorem Theorem_1_18 (a b : ℝ) (hab : a < b) : ∃ q : ℚ, a < q ∧ q < b := by  -- 定理 1.18：有理數稠密性，給定 a < b，存在有理數 q 使得 a < q < b
+   have h_pos : 0 < b - a := sub_pos.mpr hab  -- 由 a < b 得到 0 < b - a
+   have h_arch1 : ∃ n : ℕ, (1 : ℝ) < n * (b - a) := Theorem_1_16 (b - a) 1 h_pos  -- 由阿基米德性質得到存在自然數 n 使得 1 < n * (b - a)
+   obtain ⟨n, hn_gt⟩ := h_arch1  -- 取出這樣的 n，並記 hn_gt : 1 < n * (b - a)
+   have hn_pos : (n : ℝ) > 0 := by  -- 證明 n > 0（反證法）
+      by_contra h_neg  -- 假設 n 不大於 0
+      push_neg at h_neg  -- 轉換為 n ≤ 0
+      have hn_noneg : (n : ℝ) ≥ 0 := Nat.cast_nonneg n  -- 但自然數必定 ≥ 0
+      have hn_zero : (n : ℝ) = 0 := le_antisymm h_neg hn_noneg  -- 所以 n = 0
+      rw [hn_zero] at hn_gt  -- 代入得 1 < 0 * (b - a)
+      simp at hn_gt  -- 化簡得 1 < 0
+      norm_num at hn_gt  -- 這是矛盾，完成反證
+   have h_inv : (1 : ℝ) / n < b - a := by  -- 證明 1/n < b - a
+      have hn_ne : (n : ℝ) ≠ 0 := ne_of_gt hn_pos  -- n > 0 故 n ≠ 0
+      suffices 1 < n * (b - a) by  -- 只需證明 1 < n * (b - a)（反向推理）
+         calc (1 : ℝ) / n  -- 計算鏈證明 1/n < b - a
+            _ = 1 / n * 1 := by ring  -- 1/n = (1/n) * 1
+            _ < 1 / n * (n * (b - a)) := by  -- (1/n) * 1 < (1/n) * (n * (b - a))
+               apply mul_lt_mul_of_pos_left this  -- 由 1 < n * (b - a) 和 1/n > 0 得證
+               exact div_pos one_pos hn_pos  -- 確認 1/n > 0
+            _ = b - a := by field_simp  -- (1/n) * n * (b - a) = b - a
+      exact hn_gt  -- 而 1 < n * (b - a) 即為 hn_gt
+   let m : ℤ := Int.floor (n * a) + 1  -- 定義 m 為大於 n*a 的最小整數：m = ⌊n*a⌋ + 1
+   have hm_gt : (n : ℝ) * a < m := by  -- 證明 n * a < m
+      calc (n : ℝ) * a  -- 計算鏈
+        _ < ↑⌊n * a⌋ + 1 := Int.lt_floor_add_one (n * a)  -- n*a < ⌊n*a⌋ + 1（floor 的性質）
+        _ = ↑(⌊n * a⌋ + 1) := by norm_cast  -- 類型轉換：實數加法轉整數加法
+        _ = ↑(Int.floor (n * a) + 1) := rfl  -- 即為 m 的定義
+   have hm_le : (m : ℝ) ≤ (n : ℝ) * a + 1 := by  -- 證明 m ≤ n*a + 1
+      calc (m : ℝ)  -- 計算鏈
+        _ = ↑(Int.floor (n * a) + 1) := by rfl  -- m 的定義
+        _ = ↑⌊n * a⌋ + 1 := by norm_cast  -- 類型轉換：整數加法轉實數加法
+        _ ≤ (n * a) + 1 := by linarith [Int.floor_le (n * a)]  -- 因為 ⌊n*a⌋ ≤ n*a（floor 的性質）
+   let q : ℚ := m / n  -- 構造有理數 q = m/n
+   have hq_real : (q : ℝ) = (m : ℝ) / (n : ℝ) := by  -- 證明有理數 q 轉實數等於 m/n
+      simp only [q, Rat.cast_div, Rat.cast_intCast, Rat.cast_natCast]  -- 展開有理數到實數的轉換
+   use q  -- 使用 q 作為所求的有理數
+   constructor  -- 需要證明 a < q 且 q < b 兩個目標
+   -- 證明 a < q
+   calc (a : ℝ)  -- 計算鏈證明 a < q（在實數域）
+     _ = (n : ℝ) * a / n := by field_simp  -- a = (n*a) / n
+     _ < (m : ℝ) / n := by exact div_lt_div_of_pos_right hm_gt hn_pos  -- (n*a)/n < m/n（因為 n*a < m 且 n > 0）
+     _ = (q : ℝ) := hq_real.symm  -- m/n = q（在實數域）
+   -- 證明 q < b
+   calc (q : ℝ)  -- 計算鏈證明 q < b（在實數域）
+     _ = (m : ℝ) / n := hq_real  -- q = m/n（在實數域）
+     _ ≤ ((n : ℝ) * a + 1) / n := by exact div_le_div_of_nonneg_right hm_le (le_of_lt hn_pos)  -- m/n ≤ (n*a + 1)/n（因為 m ≤ n*a + 1 且 n > 0）
+     _ = (n : ℝ) * a / n + 1 / n := by ring  -- (n*a + 1)/n = (n*a)/n + 1/n
+     _ = a + 1 / n := by field_simp  -- (n*a)/n + 1/n = a + 1/n
+     _ < a + (b - a) := by linarith [h_inv]  -- a + 1/n < a + (b - a)（因為 1/n < b - a）
+     _ = (b : ℝ) := by ring  -- a + (b - a) = b
+
+-- Definition 1.19 : Bounded below, infimum, and bounded
+-- 定義 1.19：下界、下確界和有界
+
+-- i) Lower bound and bounded below
+-- 下界：若 m ≤ a 對所有 a ∈ E 成立，則 m 是 E 的下界
+def is_lower_bound (m : ℝ) (E : Set ℝ) : Prop :=
+  ∀ a ∈ E, m ≤ a
+
+-- 有下界：存在下界
+def bounded_below (E : Set ℝ) : Prop :=
+  ∃ m : ℝ, is_lower_bound m E
+
+-- ii) Infimum (greatest lower bound)
+-- 下確界：t 是下界，且 t 大於所有其他下界
+def is_infimum (t : ℝ) (E : Set ℝ) : Prop :=
+  is_lower_bound t E ∧ ∀ m : ℝ, is_lower_bound m E → m ≤ t
+
+-- iii) Bounded (both above and below)
+-- 有界：既有上界又有下界
+def bounded (E : Set ℝ) : Prop :=
+  bounded_above E ∧ bounded_below E
+
+-- Theorem 1.20 : Let E ⊆ ℝ be nonempty.
+-- (1) E has a supremum iff -E has an infimum, in which case inf(-E) = -sup(E).
+-- 定理 1.20(1)：E 有上確界 ⟺ -E 有下確界，且 inf(-E) = -sup(E)
+
+-- 定義取負的集合：-E = {-x : x ∈ E}
+def neg_set (E : Set ℝ) : Set ℝ := {x | -x ∈ E}  -- 注意：x ∈ neg_set E ⟺ -x ∈ E
+
+-- 定理 1.20(1) 包含兩個部分：
+-- (a) E 有上確界 ⟺ -E 有下確界（等價性）
+-- (b) 若成立，則 inf(-E) = -sup(E)（關係式）
+theorem Theorem_1_20_1 (E : Set ℝ):
+   ((∃ s, is_supremum s E) ↔ (∃ t, is_infimum t (neg_set E))) ∧  -- 第一部分：等價性
+   (∀ s t, is_supremum s E → is_infimum t (neg_set E) → t = -s) := by  -- 第二部分：關係式
+   constructor  -- 分解合取（∧）：需要證明兩個部分
+   {
+      -- 【第一部分】證明等價性：(∃ s, is_supremum s E) ↔ (∃ t, is_infimum t (neg_set E))
+      constructor  -- 分解雙向蘊涵（↔）：需要證明 (⇒) 和 (⇐)
+      {
+         -- 【⇒ 方向】若 E 有上確界 s，則 -E 有下確界 -s
+         intro h  -- 假設：h : ∃ s, is_supremum s E
+         obtain ⟨s, hs⟩ := h  -- 解構存在性：取出上確界 s 和證據 hs : is_supremum s E
+         use -s  -- 聲稱：-s 是 neg_set E 的下確界（需要證明 is_infimum (-s) (neg_set E)）
+         constructor  -- 分解 is_infimum 的定義：(1) -s 是下界 ∧ (2) -s 是最大的下界
+         {
+            -- 【證明 -s 是下界】即證明：∀ x ∈ neg_set E, -s ≤ x
+            intro x hx  -- 任取 x ∈ neg_set E（即 -x ∈ E）
+            have h1 : -x ≤ s := hs.1 (-x) hx  -- 因為 s 是 E 的上界，所以 -x ≤ s
+            linarith  -- 線性算術推理：從 -x ≤ s 得到 -s ≤ x
+         }
+         {
+            -- 【證明 -s 是最大的下界】即證明：∀ m, is_lower_bound m (neg_set E) → m ≤ -s
+            intro m hm  -- 任取下界 m（hm : 對所有 x ∈ neg_set E，m ≤ x）
+            have h1 : s ≤ -m := by  -- 先證明 s ≤ -m，然後得到 m ≤ -s
+               apply hs.2  -- 用上確界的性質：若 -m 是 E 的上界，則 s ≤ -m
+               intro a ha  -- 證明 -m 是 E 的上界：任取 a ∈ E，證明 a ≤ -m
+               have h2 : m ≤ -a := hm (-a) (by simp [neg_set]; exact ha)  -- 因為 -a ∈ neg_set E 且 m 是下界，所以 m ≤ -a
+               linarith  -- 從 m ≤ -a 得到 a ≤ -m
+            linarith  -- 從 s ≤ -m 得到 m ≤ -s
+         }
+      }
+      {
+         -- 【⇐ 方向】若 -E 有下確界 t，則 E 有上確界 -t
+         intro h  -- 假設：h : ∃ t, is_infimum t (neg_set E)
+         obtain ⟨t, ht⟩ := h  -- 解構存在性：取出下確界 t 和證據 ht : is_infimum t (neg_set E)
+         use -t  -- 聲稱：-t 是 E 的上確界（需要證明 is_supremum (-t) E）
+         constructor  -- 分解 is_supremum 的定義：(1) -t 是上界 ∧ (2) -t 是最小的上界
+         {
+            -- 【證明 -t 是上界】即證明：∀ x ∈ E, x ≤ -t
+            intro x hx  -- 任取 x ∈ E
+            have h1 : -x ∈ neg_set E := by  -- 先證明 -x ∈ neg_set E
+               simp [neg_set]  -- 展開 neg_set 的定義：-x ∈ neg_set E ⟺ -(-x) ∈ E ⟺ x ∈ E
+               exact hx  -- 而 hx : x ∈ E
+            have h2 : t ≤ -x := ht.1 (-x) h1  -- 因為 t 是 neg_set E 的下界，所以 t ≤ -x
+            linarith  -- 從 t ≤ -x 得到 x ≤ -t
+         }
+         {
+            -- 【證明 -t 是最小的上界】即證明：∀ M, is_upper_bound M E → -t ≤ M
+            intro m hm  -- 任取上界 m（hm : 對所有 x ∈ E，x ≤ m）
+            have h1 : -m ≤ t := by  -- 先證明 -m ≤ t，然後得到 -t ≤ m
+               apply ht.2  -- 用下確界的性質：若 -m 是 neg_set E 的下界，則 -m ≤ t
+               intro x hx  -- 證明 -m 是 neg_set E 的下界：任取 x ∈ neg_set E，證明 -m ≤ x
+               -- hx : x ∈ neg_set E，根據定義就是 -x ∈ E
+               have h2 : -x ≤ m := hm (-x) hx  -- 因為 -x ∈ E 且 m 是上界，所以 -x ≤ m
+               linarith  -- 從 -x ≤ m 得到 -m ≤ x
+            linarith  -- 從 -m ≤ t 得到 -t ≤ m
+         }
+      }
+   }
+   {
+      -- 【第二部分】證明關係式：若 s 是 E 的上確界，t 是 -E 的下確界，則 t = -s
+      intro s t hs ht  -- 引入 s, t 和假設 hs : is_supremum s E, ht : is_infimum t (neg_set E)
+      -- 策略：用雙向不等式 t ≤ -s 且 -s ≤ t，然後用 le_antisymm 得到 t = -s
+      have h1 : t ≤ -s := by  -- 證明 t ≤ -s
+         have h2 : s ≤ -t := by  -- 先證明 s ≤ -t（等價於 t ≤ -s）
+            apply hs.2  -- 用上確界的性質：若 -t 是 E 的上界，則 s ≤ -t
+            intro a ha  -- 證明 -t 是 E 的上界：任取 a ∈ E，證明 a ≤ -t
+            have h3 : t ≤ -a := ht.1 (-a) (by simp [neg_set]; exact ha)  -- 因為 -a ∈ neg_set E 且 t 是下界，所以 t ≤ -a
+            linarith  -- 從 t ≤ -a 得到 a ≤ -t
+         linarith  -- 從 s ≤ -t 得到 t ≤ -s
+      have h2 : -s ≤ t := by  -- 證明 -s ≤ t
+         apply ht.2  -- 用下確界的性質：若 -s 是 neg_set E 的下界，則 -s ≤ t
+         intro a ha  -- 證明 -s 是 neg_set E 的下界：任取 a ∈ neg_set E，證明 -s ≤ a
+         -- ha : a ∈ neg_set E，根據定義就是 -a ∈ E
+         have h3 : -a ≤ s := hs.1 (-a) ha  -- 因為 -a ∈ E 且 s 是上界，所以 -a ≤ s
+         linarith  -- 從 -a ≤ s 得到 -s ≤ a
+      exact le_antisymm h1 h2  -- 由 t ≤ -s 且 -s ≤ t，得到 t = -s（反對稱性）
+   }
 end WadeAnalysis
