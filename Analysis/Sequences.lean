@@ -173,3 +173,28 @@ theorem converge_to_unique {x : ℕ → ℝ} {a b : ℝ}
     lt_of_le_of_lt htriangle hsum_lt
   exact (lt_irrefl _ this)
 end WadeAnalysis
+
+example : ¬ ∃ n : ℤ, 0 < n ∧ n < 1 := by
+  intro h                               -- 假設存在一個整數 n 滿足 0 < n < 1
+  rcases h with ⟨n, hn_pos, hn_lt⟩      -- 將存在與 conjunction 拆開
+  have h_ge_one : 1 ≤ n := by           -- 由 0 < n 推得 n ≥ 1（整數性質）
+    exact Int.add_one_le_iff.mpr hn_pos -- 0 < n ↔ 1 ≤ n
+  have : (1 : ℤ) ≤ n ∧ n < 1 := by      -- 把兩個不等式放在一起
+    exact ⟨h_ge_one, hn_lt⟩
+
+  linarith                              -- n ≥ 1 且 n < 1 產生矛盾
+
+example : ∃ M : ℕ, ∀ n : ℕ, (1 : ℝ) / n < M := by
+  use 2
+  intro n
+  by_cases h : n = 0
+  · subst h
+    simp
+  · have hn_pos : 0 < n := by
+      exact Nat.pos_of_ne_zero h
+    have hn_ge_one : (1 : ℝ) ≤ n := by
+      exact_mod_cast hn_pos
+    have h_le_one : (1 : ℝ) / n ≤ 1 := by
+      have hn' : (1 : ℝ) ≤ n := hn_ge_one
+      have : 0 < (n : ℝ) := by linarith
+    nlinarith
