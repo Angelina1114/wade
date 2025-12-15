@@ -212,3 +212,38 @@ example (a : ℝ) : -(-a) = a := neg_neg a -- 後續使用 neg_neg 定理
 
 -- 對於任意實數 a，有 (-1) * (-1) = 1
 example : (-1) * (-1) = 1 := by rw [neg_one_mul, neg_neg]
+
+
+-- 對於任意實數 a，有 -(a - b) = b - a
+example (a b : ℝ ) : -(a - b) = b - a := by
+  calc
+    -(a - b)
+      = -(a + (-b)) := by rw [sub_eq_add_neg]
+    _ = (-1) * (a + (-b)) := by rw [← neg_one_mul]
+    _ = (-1) * a + (-1) * (-b) := by rw [mul_add]
+    _ = (-1) * a + (-(-b)) := by rw [neg_one_mul (-b)]
+    _ = (-1) * a + b := by rw [neg_neg]
+    _ = -a + b := by rw [neg_one_mul]
+    _ = b - a := by rw [add_comm, sub_eq_add_neg]
+/-
+example (a b : ℝ ) : -(a - b) = b - a := by rw [neg_sub] -- 後續使用 neg_sub 定理
+-/
+
+
+-- 對於任意實數 a，有 a * b = 0 → a = 0 ∨ b = 0
+example (a b : ℝ) : a * b = 0 → a = 0 ∨ b = 0 := by
+  intro h
+  by_cases h1 : a = 0
+  · -- case a = 0
+    exact Or.inl h1
+  · -- case a ≠ 0
+    right
+    have h2 : b = 0 := by
+      calc
+        b = b * 1 := by rw [mul_one]
+        _ = b * (a⁻¹ * a) := by rw [← inv_mul_cancel₀ h1]
+        _ = (a⁻¹ * a) * b := by rw [mul_comm]
+        _ = a⁻¹ * (a * b) := by rw [mul_assoc]
+        _ = a⁻¹ * 0 := by rw [h]
+        _ = 0 := by rw [mul_zero]
+    exact h2
