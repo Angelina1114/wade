@@ -167,7 +167,6 @@ namespace WadeAnalysis
 -- `add_mul` 定理實作右分配律
 
 
-
 -- 對於任意實數 a，有 0 · a = 0
 example (a : ℝ) : 0 * a = 0 := by
   calc
@@ -231,7 +230,8 @@ example (a b : ℝ ) : -(a - b) = b - a := by rw [neg_sub] -- 後續使用 neg_s
 
 
 -- 對於任意實數 a，有 a * b = 0 → a = 0 ∨ b = 0
-example (a b : ℝ) : a * b = 0 → a = 0 ∨ b = 0 := by
+example (a b : ℝ) : a * b = 0 ↔ a = 0 ∨ b = 0 := by
+  constructor
   intro h
   by_cases h1 : a = 0
   · -- case a = 0
@@ -247,3 +247,86 @@ example (a b : ℝ) : a * b = 0 → a = 0 ∨ b = 0 := by
         _ = a⁻¹ * 0 := by rw [h]
         _ = 0 := by rw [mul_zero]
     exact h2
+  intro h
+  cases h with
+  | inl ha =>
+    rw [ha]
+    rw [mul_comm, mul_zero]
+  | inr hb =>
+    rw [hb]
+    rw [mul_zero]
+
+/-
+example (a b : ℝ) : a * b = 0 ↔ a = 0 ∨ b = 0 := mul_eq_zero -- 後續使用 mul_eq_zero 定理
+-/
+
+
+-- ============================================
+-- 4. 序公理 (Order Axioms)
+-- ============================================
+
+-- 在 Lean / Mathlib 中，`ℝ` 具有線性序（Linear Order）結構，所以很多「序公理」都已經是現成定理可直接用。
+-- 這裡用「像上面 field axiom 語法說明」的方式，整理常用的序公理語法與對應的 Lean 定理名。
+
+-- 公設 4.1：反身性 (Reflexivity)
+-- 語法：`a ≤ a`
+-- 說明：`≤` 是關係（Prop），`a ≤ a` 表示「a 小於等於 a」。
+-- 在 Lean 中：`le_rfl a`（或簡寫 `le_rfl`）給出 `a ≤ a`。
+
+-- 公設 4.2：傳遞性 (Transitivity)
+-- 語法：`a ≤ b → b ≤ c → a ≤ c`
+-- 語法說明：`→` 是蘊含；整句讀成「若 a ≤ b 且 b ≤ c，則 a ≤ c」。
+-- 在 Lean 中：`le_trans h₁ h₂` 把兩個不等式串起來。
+example (a b c : ℝ) (h₁ : a ≤ b) (h₂ : b ≤ c) : a ≤ c := le_trans h₁ h₂
+
+-- 公設 4.3：反對稱性 (Antisymmetry)
+-- 語法：`a ≤ b → b ≤ a → a = b`
+-- 在 Lean 中：`le_antisymm h₁ h₂`。
+example (a b : ℝ) (h₁ : a ≤ b) (h₂ : b ≤ a) : a = b := le_antisymm h₁ h₂
+
+-- 公設 4.4：全序性 / 可比較性 (Totality / Comparability)
+-- 語法：`a ≤ b ∨ b ≤ a`
+-- 語法說明：`∨` 是「或」（or），表示任意兩個實數一定可比較。
+-- 在 Lean 中：`le_total a b`。
+example (a b : ℝ) : a ≤ b ∨ b ≤ a := le_total a b
+
+-- （補充）嚴格不等式 `<` 的語法
+-- `a < b` 也是一個 Prop；常見的連結：
+-- - `a < b → a ≤ b`：`le_of_lt`
+-- - `a ≤ b → b ≠ a → a < b`：`lt_of_le_of_ne`
+example (a b : ℝ) (h : a < b) : a ≤ b := le_of_lt h
+
+-- 公設 4.5：加法保序 (Additive Monotonicity)
+-- 語法（右加）：`a ≤ b → a + c ≤ b + c`
+-- 語法（左加）：`a ≤ b → c + a ≤ c + b`
+-- 在 Lean 中常用：
+-- - `add_le_add_right h c`：把同一個 `c` 加到右邊
+-- - `add_le_add_left  h c`：把同一個 `c` 加到左邊
+example (a b c : ℝ) (h : a ≤ b) : a + c ≤ b + c :=
+  add_le_add_right h c
+
+-- 公設 4.6：乘法保序（乘以非負數）(Multiplicative Monotonicity for nonnegative)
+-- 語法（右乘）：`0 ≤ c → a ≤ b → a * c ≤ b * c`
+-- 為什麼要 `0 ≤ c`：若 `c < 0`，乘上負數會「翻轉不等號」方向。
+-- 在 Lean 中：
+-- - `mul_le_mul_of_nonneg_right h hc` 對右乘
+-- - `mul_le_mul_of_nonneg_left  h hc` 對左乘
+example (a b c : ℝ) (hc : 0 ≤ c) (h : a ≤ b) : a * c ≤ b * c :=
+  mul_le_mul_of_nonneg_right h hc
+
+-- （補充）嚴格版本：乘以正數會保持 `<`（不翻轉）
+-- 語法：`0 < c → a < b → a * c < b * c`
+-- 在 Lean 中：`mul_lt_mul_of_pos_right h hc`
+example (a b c : ℝ) (hc : 0 < c) (h : a < b) : a * c < b * c :=
+  mul_lt_mul_of_pos_right h hc
+
+------------------------------------------------------------------------------------------------
+
+-- 1.2 Example : 對於任意實數 a，有 a ≠ 0 → a² > 0
+example (a : ℝ) : a ≠ 0 → a * a > 0 := by
+   intro h
+   by_cases h1 : a > 0
+   · exact mul_pos h1 h1
+   · have hneg : a < 0 := by
+         have : a ≤ 0 := le_of_not_gt h1
+      exact lt_of_le_of_ne this h
