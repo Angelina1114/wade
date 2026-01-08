@@ -8,6 +8,7 @@ import Mathlib.Data.Real.Archimedean -- 實數的阿基米德性質
 
 namespace WadeAnalysis
 
+
 /-
 ## 第一章：實數系统 (Chapter 1: The Real Number System)
 
@@ -265,68 +266,247 @@ example (a b : ℝ) : a * b = 0 ↔ a = 0 ∨ b = 0 := mul_eq_zero -- 後續使�
 -- 4. 序公理 (Order Axioms)
 -- ============================================
 
--- 在 Lean / Mathlib 中，`ℝ` 具有線性序（Linear Order）結構，所以很多「序公理」都已經是現成定理可直接用。
--- 這裡用「像上面 field axiom 語法說明」的方式，整理常用的序公理語法與對應的 Lean 定理名。
+-- 先寫課本上的 Postulate 2，再補充 Lean/Mathlib 常用版本。
 
--- 公設 4.1：反身性 (Reflexivity)
--- 語法：`a ≤ a`
--- 說明：`≤` 是關係（Prop），`a ≤ a` 表示「a 小於等於 a」。
--- 在 Lean 中：`le_rfl a`（或簡寫 `le_rfl`）給出 `a ≤ a`。
+-- Postulate 2. [ORDER AXIOMS]
+-- There is a relation `<` on `ℝ × ℝ` that has the following properties:
 
--- 公設 4.2：傳遞性 (Transitivity)
--- 語法：`a ≤ b → b ≤ c → a ≤ c`
--- 語法說明：`→` 是蘊含；整句讀成「若 a ≤ b 且 b ≤ c，則 a ≤ c」。
--- 在 Lean 中：`le_trans h₁ h₂` 把兩個不等式串起來。
-example (a b c : ℝ) (h₁ : a ≤ b) (h₂ : b ≤ c) : a ≤ c := le_trans h₁ h₂
+-- (1) Trichotomy Property（三歧性）
+-- 語法（課本）：給定 a, b ∈ ℝ，以下三者「恰有一個」成立：
+--   `a < b`  或  `b < a`  或  `a = b`
+-- Lean 中常用的三歧定理：
+--   `lt_trichotomy a b : a < b ∨ a = b ∨ b < a`
+example (a b : ℝ) : a < b ∨ a = b ∨ b < a := lt_trichotomy a b
 
--- 公設 4.3：反對稱性 (Antisymmetry)
--- 語法：`a ≤ b → b ≤ a → a = b`
--- 在 Lean 中：`le_antisymm h₁ h₂`。
-example (a b : ℝ) (h₁ : a ≤ b) (h₂ : b ≤ a) : a = b := le_antisymm h₁ h₂
+-- (2) Transitive Property（傳遞性）
+-- 語法（課本）：`a < b` 且 `b < c` 蘊含 `a < c`
+-- Lean：`lt_trans h₁ h₂`
+example (a b c : ℝ) (h₁ : a < b) (h₂ : b < c) : a < c := lt_trans h₁ h₂
 
--- 公設 4.4：全序性 / 可比較性 (Totality / Comparability)
--- 語法：`a ≤ b ∨ b ≤ a`
--- 語法說明：`∨` 是「或」（or），表示任意兩個實數一定可比較。
--- 在 Lean 中：`le_total a b`。
-example (a b : ℝ) : a ≤ b ∨ b ≤ a := le_total a b
+-- (3) The Additive Property（加法保序）
+-- 語法（課本）：`a < b` 且 `c ∈ ℝ` 蘊含 `a + c < b + c`
+-- Lean：`add_lt_add_right h c`（或 `add_lt_add_left h c`）
+example (a b c : ℝ) (h : a < b) : a + c < b + c := add_lt_add_right h c
 
--- （補充）嚴格不等式 `<` 的語法
--- `a < b` 也是一個 Prop；常見的連結：
--- - `a < b → a ≤ b`：`le_of_lt`
--- - `a ≤ b → b ≠ a → a < b`：`lt_of_le_of_ne`
-example (a b : ℝ) (h : a < b) : a ≤ b := le_of_lt h
-
--- 公設 4.5：加法保序 (Additive Monotonicity)
--- 語法（右加）：`a ≤ b → a + c ≤ b + c`
--- 語法（左加）：`a ≤ b → c + a ≤ c + b`
--- 在 Lean 中常用：
--- - `add_le_add_right h c`：把同一個 `c` 加到右邊
--- - `add_le_add_left  h c`：把同一個 `c` 加到左邊
-example (a b c : ℝ) (h : a ≤ b) : a + c ≤ b + c :=
-  add_le_add_right h c
-
--- 公設 4.6：乘法保序（乘以非負數）(Multiplicative Monotonicity for nonnegative)
--- 語法（右乘）：`0 ≤ c → a ≤ b → a * c ≤ b * c`
--- 為什麼要 `0 ≤ c`：若 `c < 0`，乘上負數會「翻轉不等號」方向。
--- 在 Lean 中：
--- - `mul_le_mul_of_nonneg_right h hc` 對右乘
--- - `mul_le_mul_of_nonneg_left  h hc` 對左乘
-example (a b c : ℝ) (hc : 0 ≤ c) (h : a ≤ b) : a * c ≤ b * c :=
-  mul_le_mul_of_nonneg_right h hc
-
--- （補充）嚴格版本：乘以正數會保持 `<`（不翻轉）
--- 語法：`0 < c → a < b → a * c < b * c`
--- 在 Lean 中：`mul_lt_mul_of_pos_right h hc`
+-- (4) The Multiplicative Properties（乘法性質）
+-- (4a) 若 `c > 0`，則 `a < b` 蘊含 `a*c < b*c`
+-- Lean：`mul_lt_mul_of_pos_right h hc`
 example (a b c : ℝ) (hc : 0 < c) (h : a < b) : a * c < b * c :=
   mul_lt_mul_of_pos_right h hc
 
-------------------------------------------------------------------------------------------------
+-- (4b) 若 `c < 0`，則 `a < b` 蘊含 `b*c < a*c`（乘負數會翻轉不等號）
+-- Lean：`mul_lt_mul_of_neg_right h hc`
+example (a b c : ℝ) (hc : c < 0) (h : a < b) : b * c < a * c :=
+  mul_lt_mul_of_neg_right h hc
 
--- 1.2 Example : 對於任意實數 a，有 a ≠ 0 → a² > 0
+-- 課本的符號約定（在 Lean 裡也成立，只是多半已經內建為 notation）
+-- - `b > a` 表示 `a < b`（Lean 的 `b > a` 就是 `a < b`）
+-- - `a ≤ b`、`a ≥ b` 是弱不等式（在 Lean 裡 `≤`/`≥` 本身就是基本關係）
+-- - `a < b < c` 表示 `a < b` 且 `b < c`（在 Lean 裡通常寫成 `a < b ∧ b < c`）
+
+-- ------------------------------------------------------------------------------------------------
+-- 補充：常用的 `≤` 版本（寫證明時很常用）
+-- - `le_rfl a : a ≤ a`（反身性）
+-- - `le_trans h₁ h₂ : a ≤ c`（傳遞性）
+-- - `add_le_add_right h c : a + c ≤ b + c`（加法保序）
+-- - `mul_le_mul_of_nonneg_right h hc : a*c ≤ b*c`（右乘非負數保序）
+
+-- 例：對於任意實數 a，有 a ≠ 0 → a² > 0（這裡用 a*a 代表 a²）
 example (a : ℝ) : a ≠ 0 → a * a > 0 := by
-   intro h
-   by_cases h1 : a > 0
-   · exact mul_pos h1 h1
-   · have hneg : a < 0 := by
-         have : a ≤ 0 := le_of_not_gt h1
-      exact lt_of_le_of_ne this h
+  intro h
+  have h1 : a < 0 ∨ a > 0 := ne_iff_lt_or_gt.mp h
+  cases h1 with
+  | inl h1 =>
+    have : a * a > 0 * a := mul_lt_mul_of_neg_right h1 h1
+    have a_mul_0 : 0 * a = 0 := zero_mul a
+    rw [a_mul_0] at this
+    exact this
+  | inr h1 =>
+    have : a * a > 0 * a := mul_lt_mul_of_pos_right h1 h1
+    have a_mul_0 : 0 * a = 0 := zero_mul a
+    rw [a_mul_0] at this
+    exact this
+
+/-
+example (a : ℝ) : a ≠ 0 → a * a > 0 := by
+  intro h
+  have h1 : a < 0 ∨ a > 0 := ne_iff_lt_or_gt.mp h
+  cases h1 with
+  | inl h1 =>
+    exact mul_pos_of_neg_of_neg h1 h1 -- 後續使用 mul_pos_of_neg_of_neg : a < 0 → b < 0 → a * b > 0 定理
+  | inr h1 =>
+    exact mul_pos h1 h1 -- 後續使用 mul_pos : a > 0 → b > 0 → a * b > 0 定理
+-/
+
+-- If a ∈ R, prove that 0 < a < 1 implies 0 < a² < a and a > 1 implies a² > a.
+example (a : ℝ) : 0 < a ∧ a < 1 → 0 < a * a ∧ a * a < a := by
+  intro h
+  rcases h with ⟨h_pos, h_lt_1⟩
+  constructor
+  · exact mul_pos h_pos h_pos
+  · have h_a_a : a * a < 1 * a := mul_lt_mul_of_pos_right h_lt_1 h_pos
+    have h_a : 1 * a = a := one_mul a
+    rw [h_a] at h_a_a
+    exact h_a_a
+
+example (a : ℝ) : a > 1 → a * a > a := by
+  intro h
+  have h_pos : 0 < a := lt_trans zero_lt_one h
+  have h_a_a : a * a > 1 * a := mul_lt_mul_of_pos_right h h_pos
+  have h_a : 1 * a = a := one_mul a
+  rw [h_a] at h_a_a
+  exact h_a_a
+
+-- ============================================
+-- 1.4 Definition：絕對值 (Absolute Value) 的語法對應
+-- ============================================
+
+-- 課本定義（分段）：
+--   |a| := { a    if a ≥ 0
+--          { -a   if a < 0
+--
+-- 在 Lean 裡，這種「分段定義」最常用 `if ... then ... else ...` 來寫：
+-- - 條件 `a ≥ 0` 是一個命題（Prop）
+-- - `if a ≥ 0 then a else -a` 會回傳一個 `ℝ`
+-- - `noncomputable` 表示這個定義不強求可計算（在純數學章節很常見）
+-- 但在 Mathlib 裡，絕對值已經內建好了：
+-- - 函數名：`abs`
+-- - 記號：`|a|`（notation）
+-- 所以我們**不需要自己再用 `if ... then ... else ...` 定義一次**，直接用 `|a|` 即可。
+
+-- （在 Lean 裡 `|a|` 就是 `abs a` 的 notation）
+example (a : ℝ) : |a| = abs a := rfl
+
+-- 例：對應課本分段的兩個 case（這就是課本定義在 Mathlib 的常用改寫定理）
+-- - 若 `0 ≤ a`，則 `|a| = a`：`abs_of_nonneg`
+-- - 若 `a < 0`，則 `|a| = -a`：`abs_of_neg`
+example (a : ℝ) (h : 0 ≤ a) : |a| = a := abs_of_nonneg h
+
+example (a : ℝ) (h : a < 0) : |a| = -a := abs_of_neg h
+
+--1.5 Remark. The absolute value is multiplicative; that is, |ab| = |a| |b| for all a, b ∈ R.
+example (a b : ℝ) : |a * b| = |a| * |b| := by
+  by_cases ha : 0 ≤ a
+  · -- case 1: 0 ≤ a
+    by_cases hb : 0 ≤ b
+    · -- case 1.1: 0 ≤ a ∧ 0 ≤ b
+      have hab : 0 ≤ a * b := mul_nonneg ha hb
+      calc
+        |a * b| = a * b := abs_of_nonneg hab
+        _ = |a| * |b| := by
+          rw [abs_of_nonneg ha, abs_of_nonneg hb]
+    · -- case 1.2: 0 ≤ a ∧ b < 0
+      have hb' : b < 0 := lt_of_not_ge hb
+      have hab : a * b ≤ 0 :=
+        mul_nonpos_of_nonneg_of_nonpos ha (le_of_lt hb')
+      calc
+        |a * b| = -(a * b) := abs_of_nonpos hab
+        _ = a * (-b) := by
+          rw [mul_neg]
+        _ = |a| * |b| := by
+          rw [abs_of_nonneg ha, abs_of_neg hb']
+  · -- case 2: a < 0
+    have ha' : a < 0 := lt_of_not_ge ha
+    by_cases hb : 0 ≤ b
+    · -- case 2.1: a < 0 ∧ 0 ≤ b
+      have hab : a * b ≤ 0 :=
+        mul_nonpos_of_nonpos_of_nonneg (le_of_lt ha') hb
+      calc
+        |a * b| = -(a * b) := abs_of_nonpos hab
+        _ = (-a) * b := by
+          rw [neg_mul]
+        _ = |a| * |b| := by
+          rw [abs_of_neg ha', abs_of_nonneg hb]
+    · -- case 2.2: a < 0 ∧ b < 0
+      have hb' : b < 0 := lt_of_not_ge hb
+      have hab : a * b > 0 :=
+        mul_pos_of_neg_of_neg ha' hb'
+      calc
+        |a * b| = a * b := abs_of_pos hab
+        _ = (-a) * (-b) := by
+          rw [neg_mul_neg]
+        _ = |a| * |b| := by
+          rw [abs_of_neg ha', abs_of_neg hb']
+
+/-
+example (a b : ℝ) : |a * b| = |a| * |b| := abs_mul a b -- 後續使用 abs_mul 定理
+-/
+
+--1.6 Theorem. [FUNDAMENTAL THEOREM OF ABSOLUTE VALUES].
+--Let a ∈ R and M ≥ 0. Then |a| ≤ M if and only if −M ≤ a ≤ M.
+example (a : ℝ) (M : ℝ) (hM : M ≥ 0) : |a| ≤ M ↔ -M ≤ a ∧ a ≤ M := by
+  constructor
+  intro h
+  by_cases ha : 0 ≤ a
+  · -- case 1: 0 ≤ a
+    have h_a : |a| = a := abs_of_nonneg ha
+    constructor
+    · have a_ge_negM : -M ≤ a := by linarith
+      exact a_ge_negM
+    · have a_le_M : a ≤ M := by
+        rw [h_a] at h
+        exact h
+      exact a_le_M
+  · -- case 2: a < 0
+    have ha' : a < 0 := lt_of_not_ge ha
+    have h_a : |a| = -a := abs_of_neg ha'
+    constructor
+    · rw [h_a] at h
+      have a_ge_negM : -M ≤ a := by
+         have neg1_le_0 : (-1 : ℝ) ≤ 0 := by norm_num
+         have h1 : M ≥ -a := by
+            exact h
+         have h2 : M * (-1) ≤ (-a) * (-1) := mul_le_mul_of_nonpos_right h1 neg1_le_0
+         have h3 : -M = M * (-1) := by rw [mul_neg_one]
+         have h4 : (-a) * (-1) = a := by rw [mul_neg_one, neg_neg]
+         rw [← h3, h4] at h2
+         exact h2
+      exact a_ge_negM
+    · have a_le_M : a ≤ M := by linarith
+      exact a_le_M
+  intro h
+  rcases h with ⟨h_neg, h_pos⟩
+  by_cases ha : 0 ≤ a
+  · -- case 1: 0 ≤ a
+    have h_a : |a| = a := abs_of_nonneg ha
+    rw [h_a]
+    exact h_pos
+  · -- case 2: a < 0
+    have ha' : a < 0 := lt_of_not_ge ha
+    have h_a : |a| = -a := abs_of_neg ha'
+    rw [h_a]
+    have : -a ≤ M := by
+      have neg1_le_0 : (-1 : ℝ) ≤ 0 := by norm_num
+      have h1 : (-M) * (-1) ≥ a * (-1) := mul_le_mul_of_nonpos_right h_neg neg1_le_0
+      have h2 : (-M) * (-1) = M := by rw [mul_neg_one, neg_neg]
+      have h3 : a * (-1) = -a := by rw [mul_neg_one]
+      rw [h2, h3] at h1
+      exact h1
+    exact this
+
+/-
+`neg_nonneg` : -a ≥ 0 ↔ a ≤ 0
+`neg_le_neg` : a ≤ b → -b ≤ -a
+example (a : ℝ) (M : ℝ) : |a| ≤ M ↔ -M ≤ a ∧ a ≤ M := by
+  exact abs_le -- 後續使用 abs_le 定理
+-/
+
+-- 1.7 Theorem. The absolute value satisfies the following three properties.
+--(i) [Positive Definite] For all a ∈ R, |a| ≥ 0 with |a| = 0 if and only if a = 0.
+example (a : ℝ) : 0 ≤ |a| := abs_nonneg a -- 後續使用 abs_nonneg 定理
+example (a : ℝ) : |a| = 0 ↔ a = 0 := abs_eq_zero
+-- (ii) [Symmetric] For all a, b ∈ R, |a − b| = |b − a|.
+example (a b : ℝ) : |a - b| = |b - a| := abs_sub_comm a b
+-- (iii) [Triangle Inequalities] For all a, b ∈ R, |a + b| ≤ |a| + |b| and ||a| − |b|| ≤ |a − b|.
+example (a b : ℝ) : |a + b| ≤ |a| + |b| := abs_add_le a b
+example (a b : ℝ) : abs (|a| - |b|) ≤ |a - b| := abs_abs_sub_abs_le_abs_sub a b
+
+-- 1.8 EXAMPLE. Prove that if −2 < x < 1, then |x² − x| < 6.
+example (x : ℝ) : -2 < x ∧ x < 1 → |x^2 - x| < 6 := by
+  intro h
+  rcases h with ⟨h_neg2, h_1⟩
+  have h_1' : x ≤ 1 := le_of_lt h_1
+  have h_neg2' : -2 ≤ x := le_of_lt h_neg2
+  have h_12 : (1 : ℝ) ≤ 2 := by norm_num
+  have h_2 : x ≤ 2 := le_trans h_1' h_12
+  have : |x| ≤ 2 := abs_le.mpr
