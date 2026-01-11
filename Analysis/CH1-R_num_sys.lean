@@ -364,15 +364,10 @@ example (a : ℝ) : a > 1 → a * a > a := by
 -- 課本定義（分段）：
 --   |a| := { a    if a ≥ 0
 --          { -a   if a < 0
---
--- 在 Lean 裡，這種「分段定義」最常用 `if ... then ... else ...` 來寫：
--- - 條件 `a ≥ 0` 是一個命題（Prop）
--- - `if a ≥ 0 then a else -a` 會回傳一個 `ℝ`
--- - `noncomputable` 表示這個定義不強求可計算（在純數學章節很常見）
+
 -- 但在 Mathlib 裡，絕對值已經內建好了：
 -- - 函數名：`abs`
 -- - 記號：`|a|`（notation）
--- 所以我們**不需要自己再用 `if ... then ... else ...` 定義一次**，直接用 `|a|` 即可。
 
 -- （在 Lean 裡 `|a|` 就是 `abs a` 的 notation）
 example (a : ℝ) : |a| = abs a := rfl
@@ -489,7 +484,10 @@ example (a : ℝ) (M : ℝ) (hM : M ≥ 0) : |a| ≤ M ↔ -M ≤ a ∧ a ≤ M 
 `neg_le_neg` : a ≤ b → -b ≤ -a
 example (a : ℝ) (M : ℝ) : |a| ≤ M ↔ -M ≤ a ∧ a ≤ M := by
   exact abs_le -- 後續使用 abs_le 定理
+example (a : ℝ) (M : ℝ) : |a| < M ↔ -M < a ∧ a < M := by
+  exact abs_lt  -- 後續使用 abs_lt 定理
 -/
+
 
 -- 1.7 Theorem. The absolute value satisfies the following three properties.
 --(i) [Positive Definite] For all a ∈ R, |a| ≥ 0 with |a| = 0 if and only if a = 0.
@@ -504,9 +502,15 @@ example (a b : ℝ) : abs (|a| - |b|) ≤ |a - b| := abs_abs_sub_abs_le_abs_sub 
 -- 1.8 EXAMPLE. Prove that if −2 < x < 1, then |x² − x| < 6.
 example (x : ℝ) : -2 < x ∧ x < 1 → |x^2 - x| < 6 := by
   intro h
-  rcases h with ⟨h_neg2, h_1⟩
-  have h_1' : x ≤ 1 := le_of_lt h_1
-  have h_neg2' : -2 ≤ x := le_of_lt h_neg2
-  have h_12 : (1 : ℝ) ≤ 2 := by norm_num
-  have h_2 : x ≤ 2 := le_trans h_1' h_12
-  have : |x| ≤ 2 := abs_le.mpr
+  rcases h with ⟨hx1, hx2⟩
+
+  -- |x| < 2
+  have hx_abs : |x| < 2 := by
+    have hx_lt_2 : x < 2 := lt_trans hx2 (by norm_num)
+    exact abs_lt.mpr ⟨hx1, hx_lt_2⟩
+
+  -- |x^2| < 4
+  have hx2_abs : |x^2| < 4 := by
+    have 2 = |2|
+    have : |x|^2 < 2^2 := by
+      exact sq_lt_sq.mpr ⟨hx_nonneg x, hx_abs⟩
