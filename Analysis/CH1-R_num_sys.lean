@@ -4,6 +4,7 @@ Chapter 1: The Real Number System
 
 import Mathlib.Data.Real.Basic -- 實數的基本類型
 import Mathlib.Data.Real.Archimedean -- 實數的阿基米德性質
+import Mathlib.Algebra.Order.Group.Abs
 
 
 namespace WadeAnalysis
@@ -311,7 +312,7 @@ example (a b c : ℝ) (hc : c < 0) (h : a < b) : b * c < a * c :=
 -- - `add_le_add_right h c : a + c ≤ b + c`（加法保序）
 -- - `mul_le_mul_of_nonneg_right h hc : a*c ≤ b*c`（右乘非負數保序）
 
--- 例：對於任意實數 a，有 a ≠ 0 → a² > 0（這裡用 a*a 代表 a²）
+-- 1.2 EXAMPLE. If a ∈ R, prove that a ≠ 0 implies a² > 0.
 example (a : ℝ) : a ≠ 0 → a * a > 0 := by
   intro h
   have h1 : a < 0 ∨ a > 0 := ne_iff_lt_or_gt.mp h
@@ -338,7 +339,7 @@ example (a : ℝ) : a ≠ 0 → a * a > 0 := by
     exact mul_pos h1 h1 -- 後續使用 mul_pos : a > 0 → b > 0 → a * b > 0 定理
 -/
 
--- If a ∈ R, prove that 0 < a < 1 implies 0 < a² < a and a > 1 implies a² > a.
+-- 1.3 Example. If a ∈ R, prove that 0 < a < 1 implies 0 < a² < a and a > 1 implies a² > a.
 example (a : ℝ) : 0 < a ∧ a < 1 → 0 < a * a ∧ a * a < a := by
   intro h
   rcases h with ⟨h_pos, h_lt_1⟩
@@ -348,6 +349,9 @@ example (a : ℝ) : 0 < a ∧ a < 1 → 0 < a * a ∧ a * a < a := by
     have h_a : 1 * a = a := one_mul a
     rw [h_a] at h_a_a
     exact h_a_a
+
+example (a : ℝ) : 0 < a ∧ a < 1 → 0 < a * a ∧ a * a < a := sq_lt_self_iff
+
 
 example (a : ℝ) : a > 1 → a * a > a := by
   intro h
@@ -509,8 +513,41 @@ example (x : ℝ) : -2 < x ∧ x < 1 → |x^2 - x| < 6 := by
     have hx_lt_2 : x < 2 := lt_trans hx2 (by norm_num)
     exact abs_lt.mpr ⟨hx1, hx_lt_2⟩
 
-  -- |x^2| < 4
-  have hx2_abs : |x^2| < 4 := by
-    have 2 = |2|
-    have : |x|^2 < 2^2 := by
-      exact sq_lt_sq.mpr ⟨hx_nonneg x, hx_abs⟩
+  -- 3. 使用三角不等式展開目標
+  -- |x^2 - x| = |x^2 + (-x)| ≤ |x^2| + |-x|
+  calc
+    |x^2 - x| = |x^2 + (-x)| := by rw [sub_eq_add_neg]
+    _ ≤ |x^2| + |-x|         := abs_add_le (x^2) (-x)
+    _ = |x|^2 + |x|          := by rw [abs_pow, abs_neg] -- |x^2| = |x|^2 且 |-x| = |x|
+    _ < 2^2 + 2              := by
+      apply add_lt_add_of_le_of_lt
+      · -- 證明 |x|^2 ≤ 2^2，即 |x| * |x| ≤ 2 * 2
+        rw [pow_two, pow_two]
+        -- 使用 mul_le_mul: 0 ≤ a ≤ b ∧ 0 ≤ c ≤ d → a*c ≤ b*d
+        apply mul_le_mul (le_of_lt hx_abs) (le_of_lt hx_abs) (abs_nonneg x) (by norm_num)
+      · -- 證明 |x| < 2
+        exact hx_abs
+    _ = 6                    := by norm_num
+
+
+
+-- 1.9 Theorem. Let x, y, a ∈ R.
+-- (i) x < y + ε for all ε > 0 if and only if x ≤ y.
+example (x y : ℝ) : (∀ ε > 0, x < y + ε) ↔ x ≤ y := by
+  constructor
+  · intro h
+    by_contra hxy
+    have hlt : y < x := lt_of_not_ge hxy
+    have hε : x - y > 0 := sub_pos.mpr hlt
+    have := h (x - y) hε
+    have hcontr : y + (x - y) = x := by ring
+    rw [hcontr] at this
+    exact lt_irrefl _ this
+  · intro h ε hε
+    have hy : y < y + ε := lt_add_of_pos_right _ hε
+    exact lt_of_le_of_lt h hy
+
+example (x y : ℝ) : x ≤ y ↔ (∀ ε > 0, x < y + ε) := le_iff_forall_pos_lt_add
+-- (ii) x > y − ε for all ε > 0 if and only if x ≥ y.
+example (x y : ℝ) : (∀ ε > 0, y - ε < x) ↔ y ≤ x := le_iff_forall_pos_sub_le
+--
